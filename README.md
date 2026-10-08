@@ -49,38 +49,17 @@ It runs on any machine with Python 3. No tenant, password, certificate, or clien
 
 ## Start here
 
-You need Python 3. No other install, no login, no admin rights.
+Double-click `Start-Here.bat` on Windows, or `Start-Here.sh` on Mac or Linux.
 
-Windows, from this folder:
+A window opens in your browser. You do not type a command.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\install.ps1
-```
+1. Click **Set up this computer**. It creates the local folders. Nothing is downloaded.
+2. Click **Run the sample demo**.
+3. Click **Show the staff list** or **Open the ticket note**.
 
-Or double-click `Start-Here.bat`.
-
-Mac or Linux:
-
-```bash
-bash install.sh
-```
-
-The installer checks Python, creates the local folders, runs the tests, and runs the demo. It does not contact a tenant and it does not install extra packages.
-
-Then use the menu if you do not want to remember commands:
-
-```bash
-python3 src/lifecycle.py menu
-```
+Python 3 is the only requirement. If it is missing, the launcher tells you where to get it. Tick "Add python.exe to PATH" on Windows. No other package is installed, and no tenant is contacted.
 
 The ticket note is `reports/demo-summary.md`.
-
-You can still run the demo directly:
-
-```bash
-python3 src/lifecycle.py demo
-python3 src/lifecycle.py list
-```
 
 The demo writes `reports/demo-summary.md`. That is the one ticket note for the whole run.
 
