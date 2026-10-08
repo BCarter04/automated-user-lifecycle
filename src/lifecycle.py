@@ -91,15 +91,17 @@ def canonical(name: str, choices: dict) -> str:
     return name.strip()
 
 
-def normal_date(value: str) -> str:
-    """Turn a UK or Excel date into YYYY-MM-DD. Leave anything else unchanged."""
+def normal_date(value: str) -> str | None:
+    """Turn a UK or Excel date into YYYY-MM-DD. Return None if it is not a date."""
     text = value.strip()
+    if not text:
+        return ""
     for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d/%m/%y"):
         try:
             return datetime.strptime(text, fmt).strftime("%Y-%m-%d")
         except ValueError:
             continue
-    return text
+    return None
 
 
 def slug(first: str, last: str) -> str:
@@ -188,7 +190,11 @@ class Lifecycle:
         if role and role not in self.rules["roles"]:
             errors.append(f"unknown role '{role}'")
         if row.get("start_date"):
-            row["start_date"] = normal_date(row["start_date"])
+            parsed = normal_date(row["start_date"])
+            if not parsed:
+                errors.append("start_date is not a date. Use 2026-10-20 or 20/10/2026")
+            else:
+                row["start_date"] = parsed
         manager = row.get("manager_email", "")
         if manager and not EMAIL_RE.match(manager):
             errors.append("manager_email is not a valid address")
@@ -269,6 +275,13 @@ class Lifecycle:
         groups, record the licence, then log it. Missing people are reported,
         not created.
         """
+        if row.get("last_day"):
+            parsed = normal_date(row["last_day"])
+            if not parsed:
+                result = {"employee_id": row.get("employee_id", ""), "status": "rejected", "errors": ["last_day is not a date. Use 2026-10-31 or 31/10/2026"]}
+                self.log("leaver", "rejected", result)
+                return result
+            row["last_day"] = parsed
         user = self.find(employee_id=row.get("employee_id"), email=row.get("email"))
         if not user:
             result = {"employee_id": row.get("employee_id", ""), "email": row.get("email", ""), "status": "not_found"}
@@ -282,6 +295,7 @@ class Lifecycle:
         user["licence_at_leave"] = licence
         user["licence"] = None
         user["left_at"] = utc_now()
+        user["last_day"] = row.get("last_day", "")
         user["leave_reason"] = row.get("reason", "")
         result = {
             "employee_id": user["employee_id"],
@@ -311,6 +325,13 @@ class Lifecycle:
             result = {"employee_id": user["employee_id"], "status": "rejected", "errors": ["account is disabled"]}
             self.log("mover", "rejected", result)
             return result
+        if row.get("effective_date"):
+            parsed = normal_date(row["effective_date"])
+            if not parsed:
+                result = {"employee_id": user["employee_id"], "status": "rejected", "errors": ["effective_date is not a date. Use 2026-11-01 or 01/11/2026"]}
+                self.log("mover", "rejected", result)
+                return result
+            row["effective_date"] = parsed
         new_department = canonical(row.get("new_department") or user["department"], self.rules["departments"])
         new_location = canonical(row.get("new_location") or user["location"], self.rules["locations"])
         new_role = canonical(row.get("new_role") or user["role"], self.rules["roles"])

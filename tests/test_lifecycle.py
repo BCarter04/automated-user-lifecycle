@@ -107,7 +107,16 @@ class SampleWorkflowTest(unittest.TestCase):
         self.assertEqual(result["status"], "rejected")
         self.assertIn("account is disabled", result["errors"])
 
-    def test_report_includes_groups_removed_and_added(self):
+    def test_bad_start_date_is_rejected(self):
+        engine = self.engine()
+        result = engine.join({
+            "employee_id": "E8", "first_name": "Bad", "last_name": "Date",
+            "department": "Finance", "job_title": "Analyst", "location": "Corporate Office",
+            "role": "Staff", "manager_email": "m@example.com", "start_date": "32/10/2026",
+        })
+        self.assertEqual(result["status"], "rejected")
+        self.assertTrue(any("start_date is not a date" in error for error in result["errors"]))
+        self.assertIsNone(engine.find(employee_id="E8"))
         engine = self.engine()
         for row in lifecycle.read_csv(ROOT / "samples" / "joiners.csv"):
             engine.join(row)
