@@ -49,17 +49,20 @@ It runs on any machine with Python 3. No tenant, password, certificate, or clien
 
 ## Start here
 
-Double-click `Start-Here.bat` on Windows, or `Start-Here.sh` on Mac or Linux.
+Double-click `Start-Here.bat` on Windows, or `Start-Here.sh` on Mac or Linux. A window opens in the browser. You do not type a command.
 
-A window opens in your browser. You do not type a command.
+The window has the full steps:
 
-1. Click **Set up this computer**. It creates the local folders. Nothing is downloaded.
-2. Click **Run the sample demo**.
-3. Click **Show the staff list** or **Open the ticket note**.
+1. Set up this computer. It creates `data`, `logs`, `reports`, and `inbox` on this PC. Nothing is downloaded.
+2. Run the sample demo. Fake people only.
+3. Show the staff list, or open the ticket note.
+4. Live use: paste a CSV, or type the full path of a CSV already on this PC, then click Run on this PC.
 
-Python 3 is the only requirement. If it is missing, the launcher tells you where to get it. Tick "Add python.exe to PATH" on Windows. No other package is installed, and no tenant is contacted.
+Live use writes `data/directory.json`, a log, and a ticket note on this computer. It does not contact a tenant. Do not put a real employee export in a folder you will upload to GitHub.
 
-The ticket note is `reports/demo-summary.md`.
+Python 3 is the only requirement. If the window does not open, install Python from python.org, tick Add python.exe to PATH, and double-click Start-Here again.
+
+The sample ticket note is `reports/demo-summary.md`. A live run writes a new file in `reports/`.
 
 The demo writes `reports/demo-summary.md`. That is the one ticket note for the whole run.
 

@@ -1,8 +1,8 @@
 # Notes: how this project works
 
-Demo only. This does not connect to a real tenant. See DISCLAIMER.md.
+Demo only, and live use on this PC. Neither connects to a real tenant. See DISCLAIMER.md.
 
-Read this first. The scripts do the same job. This file explains the job in plain language.
+Read this first. The window in Start-Here is the easy path. This file explains the job in plain language.
 
 ## The problem
 

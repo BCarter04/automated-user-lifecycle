@@ -1,5 +1,6 @@
 # Local demo directory and run logs. Never commit a real tenant export.
 data/directory.json
+inbox/directory.json
 logs/*.log
 logs/*.json
 reports/*.json
