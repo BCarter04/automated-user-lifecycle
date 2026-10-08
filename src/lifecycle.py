@@ -255,6 +255,9 @@ class Lifecycle:
             "row": row.get("_row"),
             "groups": groups,
             "licence": licence,
+            "start_date": user["start_date"],
+            "department": user["department"],
+            "licence": licence,
         }
         self.log("joiner", "created", result)
         return result
