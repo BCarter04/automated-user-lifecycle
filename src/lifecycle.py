@@ -82,6 +82,15 @@ def read_csv(path: Path) -> list[dict]:
     return rows
 
 
+def canonical(name: str, choices: dict) -> str:
+    """Match a rules name without caring about capital letters or extra spaces."""
+    wanted = name.strip().lower()
+    for key in choices:
+        if key.lower() == wanted:
+            return key
+    return name.strip()
+
+
 def slug(first: str, last: str) -> str:
     """Build the mailbox name. 'Ada Okoye' becomes 'ada.okoye'."""
     raw = f"{first}.{last}".lower()
@@ -155,13 +164,16 @@ class Lifecycle:
                 if field == "manager_email" and not self.config.get("require_manager", True):
                     continue
                 errors.append(f"missing {field}")
-        department = row.get("department", "")
+        department = canonical(row.get("department", ""), self.rules["departments"])
+        row["department"] = department
         if department and department not in self.rules["departments"]:
             errors.append(f"unknown department '{department}'")
-        location = row.get("location", "")
+        location = canonical(row.get("location", ""), self.rules["locations"])
+        row["location"] = location
         if location and location not in self.rules["locations"]:
             errors.append(f"unknown location '{location}'")
-        role = row.get("role", "")
+        role = canonical(row.get("role", ""), self.rules["roles"])
+        row["role"] = role
         if role and role not in self.rules["roles"]:
             errors.append(f"unknown role '{role}'")
         manager = row.get("manager_email", "")
@@ -283,9 +295,9 @@ class Lifecycle:
             result = {"employee_id": user["employee_id"], "status": "rejected", "errors": ["account is disabled"]}
             self.log("mover", "rejected", result)
             return result
-        new_department = row.get("new_department") or user["department"]
-        new_location = row.get("new_location") or user["location"]
-        new_role = row.get("new_role") or user["role"]
+        new_department = canonical(row.get("new_department") or user["department"], self.rules["departments"])
+        new_location = canonical(row.get("new_location") or user["location"], self.rules["locations"])
+        new_role = canonical(row.get("new_role") or user["role"], self.rules["roles"])
         errors = []
         if new_department not in self.rules["departments"]:
             errors.append(f"unknown department '{new_department}'")

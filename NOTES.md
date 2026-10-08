@@ -74,6 +74,8 @@ Blank templates, header only, are `samples/blank-joiner.csv`, `samples/blank-mov
 
 Excel on a UK PC may save semicolons instead of commas, or put a hidden mark at the start of the file. The reader accepts both, and it ignores a blank row at the bottom. The column names must still match.
 
+`finance`, `Finance`, and ` finance ` are the same department. The same is true for location and role. The saved account uses the name from the rules file.
+
 ## What a joiner row must contain
 
 `employee_id` is the HR number. It must be unique.
