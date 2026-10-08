@@ -120,8 +120,13 @@ foreach ($row in $rows) {
         }
         $slug = Get-EmailSlug -First $row.first_name -Last $row.last_name
         $email = "$slug@$($config.default_domain)"
-        if ($users | Where-Object { $_.employee_id -eq $row.employee_id }) { $errors += "employee_id already exists" }
-        if ($users | Where-Object { $_.email -eq $email }) { $errors += "email already exists: $email" }
+        $existing = $users | Where-Object { $_.employee_id -eq $row.employee_id } | Select-Object -First 1
+        if ($existing -and $existing.email -eq $email) {
+            $events += [pscustomobject]@{ time = (Get-Date).ToUniversalTime().ToString("o"); action = "joiner"; status = "unchanged"; employee_id = $row.employee_id; email = $email; errors = @("already provisioned, no change") }
+            continue
+        }
+        if ($existing) { $errors += "employee_id already exists" }
+        if ($users | Where-Object { $_.email -eq $email -and $_.employee_id -ne $row.employee_id }) { $errors += "email already exists: $email" }
         if ($errors.Count -gt 0) {
             $events += [pscustomobject]@{ time = (Get-Date).ToUniversalTime().ToString("o"); action = "joiner"; status = "rejected"; employee_id = $row.employee_id; errors = $errors }
             continue

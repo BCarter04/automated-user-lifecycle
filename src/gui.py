@@ -44,22 +44,56 @@ def engine():
     return lifecycle.Lifecycle(config, rules, ROOT / "data" / "directory.json", ROOT / "logs", ROOT / "reports"), config
 
 
-def run_rows(action: str, rows: list[dict], clear: bool = False) -> str:
+REQUIRED = {
+    "joiner": ["employee_id", "first_name", "last_name", "department", "job_title", "location", "role", "manager_email", "start_date"],
+    "mover": ["employee_id", "email"],
+    "leaver": ["employee_id", "email"],
+}
+
+
+def missing_columns(action: str, rows: list[dict]) -> list[str]:
+    if not rows:
+        return ["no data rows"]
+    have = set(rows[0].keys())
+    return [name for name in REQUIRED.get(action, []) if name not in have]
+
+
+def preview_text(action: str, rows: list[dict]) -> str:
+    missing = missing_columns(action, rows)
+    lines = [f"Preview only. Nothing has been written. Action: {action}", f"Rows: {len(rows)}"]
+    if missing:
+        lines.append("Missing columns: " + ", ".join(missing))
+        lines.append("Fix the file before you confirm. The staff list was not touched.")
+    else:
+        lines.append("Columns are present. First rows:")
+    for row in rows[:3]:
+        lines.append("  " + ", ".join(f"{key}={value}" for key, value in row.items() if value))
+    if len(rows) > 3:
+        lines.append(f"  ... {len(rows) - 3} more row(s)")
+    return "\n".join(lines)
+
+
+def run_rows(action: str, rows: list[dict], dry_run: bool = False, source_name: str = "pasted.csv") -> str:
     if action not in {"joiner", "mover", "leaver"}:
         return "Choose joiner, mover, or leaver."
     if not rows:
-        return "No rows to process. Paste a CSV or give a path on this PC."
-    current, config = engine()
-    if clear and (ROOT / "data" / "directory.json").exists():
-        (ROOT / "data" / "directory.json").unlink()
-        current, config = engine()
+        return "No rows to process. Paste a CSV, choose a file, or give a path on this PC."
+    missing = missing_columns(action, rows)
+    if missing:
+        return "Staff list not touched. Missing columns: " + ", ".join(missing)
+    current, _config = engine()
     results = lifecycle.run_action(current, action, rows)
-    current.save()
+    stamp = lifecycle.utc_now().replace(":", "").replace("-", "")
+    inbox = ROOT / "inbox" / f"{action}-{stamp}-{source_name}"
+    save_rows(inbox, rows)
+    if not dry_run:
+        current.save()
     _, report = current.write_reports(action)
     lines = [
-        "LIVE ON THIS PC. No tenant was contacted.",
-        f"Staff file: {ROOT / 'data' / 'directory.json'}",
+        "DRY RUN. Staff file was not changed." if dry_run else "LIVE ON THIS PC. No tenant was contacted.",
+        f"File used: {inbox}",
         f"Ticket note: {report}",
+        f"Staff file: {ROOT / 'data' / 'directory.json'}",
         "",
     ]
     for item in results:
@@ -67,6 +101,41 @@ def run_rows(action: str, rows: list[dict], clear: bool = False) -> str:
         extra = f" — {reason}" if reason else ""
         lines.append(f"{item['status']:10} {item.get('employee_id', '')} {item.get('email', '')}{extra}")
     return "\n".join(lines)
+
+
+def save_rows(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not rows:
+        path.write_text("", encoding="utf-8")
+        return
+    import csv
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def find_person(query: str) -> str:
+    query = query.strip()
+    if not query:
+        return "Type an employee id or an email."
+    path = ROOT / "data" / "directory.json"
+    if not path.exists():
+        return "No staff file on this PC yet."
+    data = lifecycle.load_json(path)
+    for user in data.get("users", []):
+        if query.lower() in {user.get("employee_id", "").lower(), user.get("email", "").lower()}:
+            sign_in = "blocked" if not user.get("enabled") else "allowed"
+            return "\n".join([
+                f"Employee: {user.get('employee_id')} {user.get('first_name', '')} {user.get('last_name', '')}",
+                f"Email: {user.get('email')}",
+                f"Department: {user.get('department')}",
+                f"Manager: {user.get('manager_email')}",
+                f"Licence: {user.get('licence') or user.get('licence_at_leave') or 'none'}",
+                f"Sign-in: {sign_in}",
+                f"Groups: {', '.join(user.get('groups') or []) or 'none'}",
+            ])
+    return f"No person matches {query}."
 
 
 def run_demo() -> str:
@@ -98,21 +167,35 @@ def run_demo() -> str:
     return "DEMO ONLY. No tenant was contacted.\n\n" + "\n".join(parts)
 
 
-def live_from_request(fields: dict) -> str:
+def rows_from_request(fields: dict) -> tuple[str, list[dict], str]:
     action = (fields.get("action") or ["joiner"])[0]
     pasted = (fields.get("csv") or [""])[0].strip()
     path_text = (fields.get("path") or [""])[0].strip()
-    if pasted:
-        inbox = ROOT / "inbox" / f"{action}-pasted.csv"
-        inbox.write_text(pasted + "\n", encoding="utf-8")
-        rows = lifecycle.read_csv(inbox)
-        return run_rows(action, rows)
     if path_text:
         path = Path(path_text)
         if not path.is_file():
-            return f"File not found on this PC: {path}"
-        return run_rows(action, lifecycle.read_csv(path))
-    return "Paste the spreadsheet, or type the full path of a CSV already on this PC."
+            return action, [], f"File not found on this PC: {path}"
+        return action, lifecycle.read_csv(path), path.name
+    if pasted:
+        inbox = ROOT / "inbox"
+        inbox.mkdir(parents=True, exist_ok=True)
+        temp = inbox / "preview.csv"
+        temp.write_text(pasted + "\n", encoding="utf-8")
+        return action, lifecycle.read_csv(temp), "pasted.csv"
+    return action, [], ""
+
+
+def live_from_request(fields: dict) -> str:
+    action, rows, source = rows_from_request(fields)
+    if not rows and source == "":
+        return "Paste the spreadsheet, choose a file, or type the full path of a CSV already on this PC."
+    if not rows:
+        return source
+    confirmed = (fields.get("confirm") or [""])[0] == "yes"
+    dry_run = (fields.get("dry_run") or [""])[0] == "yes"
+    if not confirmed:
+        return preview_text(action, rows)
+    return run_rows(action, rows, dry_run=dry_run, source_name=source)
 
 
 def staff_list() -> str:
@@ -186,11 +269,16 @@ PAGE = """<!DOCTYPE html>
   <form method="get" action="/ticket"><button>Open the ticket note</button></form>
   <form method="post" action="/reset"><button>Reset the staff file on this PC</button></form>
 
+  <h2>Find one person</h2>
+  <form method="get" action="/person">
+    <label>Employee id or email
+      <input type="text" name="q" placeholder="E1001 or ada.okoye@example.com">
+    </label>
+    <button>Find</button>
+  </form>
+
   <h2>Live use on this PC</h2>
-  <p>This writes the staff file on this computer: data/directory.json. Put a CSV in the box, or type the full path of a CSV already on this PC. The path wins if both are filled. A second run of the same person is marked already provisioned, not rejected.</p>
-  <p>Joiner columns: employee_id, first_name, last_name, department, job_title, location, role, manager_email, start_date.</p>
-  <p>Mover columns: employee_id, email, new_department, new_job_title, new_location, new_role, new_manager_email.</p>
-  <p>Leaver columns: employee_id, email, reason. Departments must match rules/department-rules.json.</p>
+  <p>Preview first. Confirm before anything is written. Dry run writes the ticket note and keeps the staff file unchanged. The file you use is copied to inbox with the same time as the ticket note. inbox is not uploaded to GitHub.</p>
   <form method="post" action="/live">
     <label>Action
       <select name="action">
@@ -199,14 +287,26 @@ PAGE = """<!DOCTYPE html>
         <option>leaver</option>
       </select>
     </label>
-    <label>CSV path already on this PC
+    <label>Choose a CSV on this PC
+      <input type="file" id="file" accept=".csv,text/csv">
+    </label>
+    <label>Or type the full path
       <input type="text" name="path" placeholder="C:\\Users\\you\\Desktop\\joiners.csv">
     </label>
-    <label>Or paste the CSV here
-      <textarea name="csv" placeholder="employee_id,first_name,last_name,department,job_title,location,role,manager_email,start_date"></textarea>
+    <label>Or paste the CSV
+      <textarea name="csv" id="csv" placeholder="employee_id,first_name,last_name,department,job_title,location,role,manager_email,start_date"></textarea>
     </label>
-    <button>Run on this PC</button>
+    <label><input type="checkbox" name="dry_run" value="yes"> Dry run only. Do not change the staff file.</label>
+    <label><input type="checkbox" name="confirm" value="yes"> I have previewed this file and want to run it.</label>
+    <button>Preview or run</button>
   </form>
+  <script>
+    document.getElementById("file").addEventListener("change", function () {
+      var reader = new FileReader();
+      reader.onload = function () { document.getElementById("csv").value = reader.result; };
+      reader.readAsText(this.files[0]);
+    });
+  </script>
 
   <h2>Result</h2>
   <pre>{result}</pre>
@@ -220,6 +320,10 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         if path == "/list":
             self.respond(staff_list())
+        elif path == "/person":
+            from urllib.parse import parse_qs
+            query = parse_qs(urlparse(self.path).query).get("q", [""])[0]
+            self.respond(find_person(query))
         elif path == "/ticket":
             self.respond(ticket())
         else:
