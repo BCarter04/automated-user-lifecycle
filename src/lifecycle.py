@@ -66,9 +66,20 @@ def save_json(path: Path, payload: dict) -> None:
 
 
 def read_csv(path: Path) -> list[dict]:
-    """Read the HR file. The first row must be the column names."""
-    with path.open(newline="", encoding="utf-8") as handle:
-        return list(csv.DictReader(handle))
+    """Read the HR file. The first row must be the column names.
+
+    Excel on a UK PC may save a UTF-8 mark, spaces in the header, or
+    semicolons instead of commas. Those are accepted. Empty rows are skipped.
+    """
+    text = path.read_text(encoding="utf-8-sig")
+    sample = text[:1000]
+    delimiter = ";" if sample.count(";") > sample.count(",") else ","
+    rows = []
+    for row in csv.DictReader(text.splitlines(), delimiter=delimiter):
+        clean = {str(key).strip(): str(value).strip() if value else "" for key, value in row.items() if key}
+        if any(clean.values()):
+            rows.append(clean)
+    return rows
 
 
 def slug(first: str, last: str) -> str:
