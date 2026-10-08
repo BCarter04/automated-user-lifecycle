@@ -89,17 +89,23 @@ def run_rows(action: str, rows: list[dict], dry_run: bool = False, source_name: 
     if not dry_run:
         current.save()
     _, report = current.write_reports(action)
+    done = sum(1 for item in results if item["status"] in {"created", "moved", "disabled", "unchanged"})
+    stopped = len(results) - done
     lines = [
         "DRY RUN. Staff file was not changed." if dry_run else "LIVE ON THIS PC. No tenant was contacted.",
+        f"{done} completed, {stopped} rejected or not found.",
         f"File used: {inbox}",
         f"Ticket note: {report}",
         f"Staff file: {ROOT / 'data' / 'directory.json'}",
         "",
     ]
     for item in results:
+        status = item["status"]
+        if dry_run and status in {"created", "moved", "disabled"}:
+            status = "would " + status
         reason = ", ".join(item.get("errors") or [])
         extra = f" — {reason}" if reason else ""
-        lines.append(f"{item['status']:10} {item.get('employee_id', '')} {item.get('email', '')}{extra}")
+        lines.append(f"{status:14} {item.get('employee_id', '')} {item.get('email', '')}{extra}")
     return "\n".join(lines)
 
 
@@ -136,6 +142,19 @@ def find_person(query: str) -> str:
                 f"Groups: {', '.join(user.get('groups') or []) or 'none'}",
             ])
     return f"No person matches {query}."
+
+
+def rules_text() -> str:
+    rules = lifecycle.load_json(ROOT / "rules" / "department-rules.json")
+    lines = ["The script does not choose groups. This file does.", ""]
+    for name, rule in rules.get("departments", {}).items():
+        lines.append(f"{name}: {rule.get('licence')} | {', '.join(rule.get('groups', []))}")
+    lines.append("")
+    for name, rule in rules.get("locations", {}).items():
+        lines.append(f"Location {name}: {', '.join(rule.get('groups', []))}")
+    for name, rule in rules.get("roles", {}).items():
+        lines.append(f"Role {name}: {', '.join(rule.get('groups', [])) or 'no extra group'}")
+    return "\n".join(lines)
 
 
 def run_demo() -> str:
@@ -268,6 +287,7 @@ PAGE = """<!DOCTYPE html>
   <form method="post" action="/demo"><button>Run the sample demo</button></form>
   <form method="get" action="/list"><button>Show the staff list</button></form>
   <form method="get" action="/ticket"><button>Open the ticket note</button></form>
+  <form method="get" action="/rules"><button>Show department rules</button></form>
   <form method="post" action="/reset"><button>Reset the staff file on this PC</button></form>
 
   <h2>Find one person</h2>
@@ -298,6 +318,9 @@ PAGE = """<!DOCTYPE html>
       <textarea name="csv" id="csv" placeholder="employee_id,first_name,last_name,department,job_title,location,role,manager_email,start_date"></textarea>
     </label>
     <label><input type="checkbox" name="dry_run" value="yes"> Dry run only. Do not change the staff file.</label>
+    <button type="button" onclick="loadSample('joiners')">Load sample joiner</button>
+    <button type="button" onclick="loadSample('movers')">Load sample mover</button>
+    <button type="button" onclick="loadSample('leavers')">Load sample leaver</button>
     <button name="confirm" value="no">Preview</button>
     <button name="confirm" value="yes">Run</button>
   </form>
@@ -307,6 +330,11 @@ PAGE = """<!DOCTYPE html>
       reader.onload = function () { document.getElementById("csv").value = reader.result; };
       reader.readAsText(this.files[0]);
     });
+    function loadSample(name) {
+      fetch("/sample/" + name).then(function (response) { return response.text(); }).then(function (text) {
+        document.getElementById("csv").value = text;
+      });
+    }
   </script>
 
   <h2>Result</h2>
@@ -327,6 +355,20 @@ class Handler(BaseHTTPRequestHandler):
             self.respond(find_person(query))
         elif path == "/ticket":
             self.respond(ticket())
+        elif path == "/rules":
+            self.respond(rules_text())
+        elif path.startswith("/sample/"):
+            name = path.split("/")[-1]
+            sample = ROOT / "samples" / f"{name}.csv"
+            if not sample.is_file():
+                self.respond("Sample not found.")
+                return
+            body = sample.read_text(encoding="utf-8").encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
         else:
             self.respond(setup())
 
