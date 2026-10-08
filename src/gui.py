@@ -104,6 +104,8 @@ def run_rows(action: str, rows: list[dict], dry_run: bool = False, source_name: 
         status = {"created": "would create", "moved": "would move", "disabled": "would disable"}.get(item["status"], item["status"]) if dry_run else item["status"]
         reason = ", ".join(item.get("errors") or [])
         extra = f" — {reason}" if reason else ""
+        if item.get("start_date"):
+            extra += f" | start {item['start_date']} | {item.get('department', '')}"
         removed = item.get("groups_removed")
         added = item.get("groups_added")
         if removed is not None or added is not None:
@@ -182,6 +184,8 @@ def run_demo() -> str:
         for item in results:
             reason = ", ".join(item.get("errors") or [])
             extra = f" — {reason}" if reason else ""
+            if item.get("start_date"):
+                extra += f" | start {item['start_date']} | {item.get('department', '')}"
             removed = item.get("groups_removed")
             added = item.get("groups_added")
             if removed is not None or added is not None:
