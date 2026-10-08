@@ -354,9 +354,9 @@ def parse_args() -> argparse.Namespace:
     """Command line. action is joiner, mover, or leaver. input is the CSV."""
     parser = argparse.ArgumentParser(
         description="Demo only. Joiner, mover, and leaver against a local directory. Does not connect to a tenant.",
-        epilog="Start with: python3 src/lifecycle.py demo",
+        epilog="Start with the installer, then: python3 src/lifecycle.py menu",
     )
-    parser.add_argument("action", choices=["demo", "joiner", "mover", "leaver", "list", "reset"], help="demo runs the samples; list shows the staff file; reset deletes only that file")
+    parser.add_argument("action", choices=["menu", "demo", "joiner", "mover", "leaver", "list", "reset"], help="menu is the easy start; demo runs the samples; list shows the staff file; reset deletes only that file")
     parser.add_argument("--input", help="CSV file for joiner, mover, or leaver. Not used by demo, list, or reset.")
     parser.add_argument("--config", default=str(ROOT / "config.example.json"), help="Settings file. The sample uses a fake tenant.")
     parser.add_argument("--rules", default=str(ROOT / "rules" / "department-rules.json"), help="Department, location, and role group map.")
@@ -415,6 +415,37 @@ def write_demo_summary(report_dir: Path, tenant: str, steps: list[tuple[str, lis
     return path
 
 
+def menu() -> int:
+    """Numbered menu so the commands do not have to be remembered."""
+    print("DEMO ONLY. No tenant is contacted.")
+    print("Owner: Oluwatobiloba Benjamin Ogungbangbe. Not for sale. See LICENSE.")
+    print("")
+    print("1  Run the sample demo")
+    print("2  Show the staff list")
+    print("3  Open the ticket summary path")
+    print("4  Reset the local staff file")
+    print("5  Quit")
+    choice = input("Choose 1-5: ").strip()
+    script = str(Path(__file__).resolve())
+    if choice == "1":
+        return subprocess_call([sys.executable, script, "demo"])
+    if choice == "2":
+        return subprocess_call([sys.executable, script, "list"])
+    if choice == "3":
+        summary = ROOT / "reports" / "demo-summary.md"
+        print(summary if summary.exists() else "No summary yet. Choose 1 first.")
+        return 0
+    if choice == "4":
+        return subprocess_call([sys.executable, script, "reset"])
+    print("Quit.")
+    return 0
+
+
+def subprocess_call(command: list[str]) -> int:
+    import subprocess
+    return subprocess.call(command)
+
+
 def main() -> int:
     """Load files, process every row, save, print a one-line result per person."""
     args = parse_args()
@@ -423,6 +454,8 @@ def main() -> int:
     config = load_json(Path(args.config))
     rules = load_json(Path(args.rules))
     directory = Path(args.directory)
+    if args.action == "menu":
+        return menu()
     if args.action == "reset":
         if directory.exists():
             directory.unlink()

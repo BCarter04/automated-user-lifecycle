@@ -49,12 +49,33 @@ It runs on any machine with Python 3. No tenant, password, certificate, or clien
 
 ## Start here
 
-You need Python 3. No install, no login, no admin rights.
+You need Python 3. No other install, no login, no admin rights.
 
-1. Open a terminal in this folder.
-2. Run the demo. It clears the local staff file, then runs joiner, mover, and leaver.
-3. Run list to see who is enabled and which groups they have.
-4. Open `examples/mover-report.md` if you want to see a ticket note before you run anything. A real run writes a new file in `reports/`.
+Windows, from this folder:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+Or double-click `Start-Here.bat`.
+
+Mac or Linux:
+
+```bash
+bash install.sh
+```
+
+The installer checks Python, creates the local folders, runs the tests, and runs the demo. It does not contact a tenant and it does not install extra packages.
+
+Then use the menu if you do not want to remember commands:
+
+```bash
+python3 src/lifecycle.py menu
+```
+
+The ticket note is `reports/demo-summary.md`.
+
+You can still run the demo directly:
 
 ```bash
 python3 src/lifecycle.py demo
