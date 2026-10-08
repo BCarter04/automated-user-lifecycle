@@ -65,8 +65,18 @@ def preview_text(action: str, rows: list[dict]) -> str:
     if missing:
         lines.append("Missing columns: " + ", ".join(missing))
         lines.append("Fix the file before you confirm. The staff list was not touched.")
+        return "\n".join(lines)
+    date_field = {"joiner": "start_date", "mover": "effective_date", "leaver": "last_day"}[action]
+    bad = []
+    for index, row in enumerate(rows, start=2):
+        value = row.get(date_field, "")
+        if value and lifecycle.normal_date(value) is None:
+            bad.append(f"row {index}: {date_field} is not a date ({value})")
+    if bad:
+        lines.append("Date problems. Nothing has been written:")
+        lines.extend(bad)
     else:
-        lines.append("Columns are present. First rows:")
+        lines.append("Columns are present. Dates that are filled look valid. First rows:")
     for row in rows[:3]:
         lines.append("  " + ", ".join(f"{key}={value}" for key, value in row.items() if value))
     if len(rows) > 3:

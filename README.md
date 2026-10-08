@@ -87,6 +87,10 @@ python3 src/lifecycle.py leaver --input samples/leavers.csv
 
 What you should see:
 
+![Sample demo PASS result](examples/demo-pass.png)
+
+The same text is in `examples/demo-pass.txt`. A good run says PASS.
+
 | Command | Expected result |
 | --- | --- |
 | joiner | 5 created, 1 rejected. Maya Adebayo is the manager row. E1005 is rejected, and the reason includes the row number. |
@@ -143,7 +147,7 @@ On Windows, the PowerShell script does the same demo path:
 
 Add `--dry-run` to validate without writing the directory. The report is still written.
 
-After a joiner run you should see four accounts created and one rejected. The bad row uses a department that is not in the rules file. That rejection is intentional.
+After a joiner run you should see five accounts created and one rejected. The bad row uses a department that is not in the rules file. That rejection is intentional. PowerShell accepts the same Excel file: semicolons, `finance` for Finance, and `20/10/2026`.
 
 Outputs:
 
@@ -173,7 +177,7 @@ The sample tenant is `tenant.example.onmicrosoft.com`. Users are fake. Do not co
 
 `config.json`, `.env`, and `data/directory.json` are gitignored. Copy `config.example.json` if you want a local config.
 
-Graph mode is not turned on. Connecting this to a Microsoft 365 developer tenant is a later step, and the secret stays in an environment variable, not in the repo.
+Graph mode is not turned on. That is finished for this public repo. The later tenant step is explained in NOTES.md. The tenant name goes in `config.json`, which is not uploaded. The secret stays in an environment variable.
 
 ## How to apply it
 

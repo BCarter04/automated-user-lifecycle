@@ -1,0 +1,19 @@
+PASS. This matches the sample result.
+
+joiner
+  created    E1000 maya.adebayo@example.com | start 2026-01-01 | People
+  created    E1001 ada.okoye@example.com | start 2026-10-06 | Finance
+  created    E1002 sam.patel@example.com | start 2026-10-06 | Sales
+  created    E1003 noah.williams@example.com | start 2026-10-13 | Infrastructure
+  created    E1004 ife.adebayo@example.com | start 2026-10-20 | People
+  rejected   E1005 — missing manager_email, unknown department
+
+mover
+  moved      E1001 ada.okoye@example.com | off: SG-Finance-SharePoint, SG-Finance-Users | on: SG-IT-Tools, SG-Infrastructure-Users
+
+leaver
+  disabled   E1002 sam.patel@example.com
+  not_found  E9999
+
+Demo only. No tenant was contacted.
+Owner: Oluwatobiloba Benjamin Ogungbangbe

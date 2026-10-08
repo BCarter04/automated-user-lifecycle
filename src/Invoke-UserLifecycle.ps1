@@ -96,9 +96,44 @@ if ($Action -eq "demo") {
     Write-Host "demo finished. Next: .\src\Invoke-UserLifecycle.ps1 -Action list"
     return
 }
+function Resolve-RuleName {
+    param($Name, $Table)
+    # finance and Finance are the same department. The saved name comes from the rules file.
+    if (-not $Name) { return "" }
+    foreach ($key in $Table.PSObject.Properties.Name) {
+        if ($key.ToLower() -eq $Name.Trim().ToLower()) { return $key }
+    }
+    return $Name.Trim()
+}
+
+function Convert-ToIsoDate {
+    param($Value)
+    # 20/10/2026 and 2026-10-20 are accepted. A bad date returns $null.
+    if (-not $Value) { return "" }
+    foreach ($fmt in @("dd/MM/yyyy", "dd-MM-yyyy", "yyyy-MM-dd", "dd/MM/yy")) {
+        try {
+            return [datetime]::ParseExact($Value.Trim(), $fmt, [Globalization.CultureInfo]::InvariantCulture).ToString("yyyy-MM-dd")
+        } catch {}
+    }
+    return $null
+}
+
+function Import-HrCsv {
+    param([string]$Path)
+    # Excel may save semicolons or a hidden mark at the start. Both are accepted.
+    $text = [System.IO.File]::ReadAllText($Path)
+    if ($text.Length -gt 0 -and $text[0] -eq [char]0xFEFF) { $text = $text.Substring(1) }
+    $sample = $text.Substring(0, [Math]::Min(1000, $text.Length))
+    $delim = ","
+    if (($sample.ToCharArray() | Where-Object { $_ -eq ";" }).Count -gt ($sample.ToCharArray() | Where-Object { $_ -eq "," }).Count) { $delim = ";" }
+    $temp = Join-Path ([System.IO.Path]::GetTempPath()) "lifecycle-import.csv"
+    [System.IO.File]::WriteAllText($temp, $text)
+    return @(Import-Csv -Path $temp -Delimiter $delim | Where-Object { $_.PSObject.Properties.Value -join "" })
+}
+
 if (-not $InputPath) { Write-Host "This action needs -InputPath. Example: -InputPath .\samples\joiners.csv"; exit 1 }
 
-$rows = Import-Csv -Path $InputPath
+$rows = Import-HrCsv -Path $InputPath
 $events = @()
 $users = @($directory.users)
 
@@ -109,14 +144,24 @@ foreach ($row in $rows) {
         foreach ($field in @("employee_id", "first_name", "last_name", "department", "job_title", "location", "role", "manager_email", "start_date")) {
             if (-not $row.$field) { $errors += "missing $field" }
         }
+        if ($row.department) {
+            $row.department = Resolve-RuleName -Name $row.department -Table $rules.departments
+        }
         if ($row.department -and $rules.departments.PSObject.Properties.Name -notcontains $row.department) {
             $errors += "unknown department '$($row.department)'"
         }
+        if ($row.location) { $row.location = Resolve-RuleName -Name $row.location -Table $rules.locations }
         if ($row.location -and $rules.locations.PSObject.Properties.Name -notcontains $row.location) {
             $errors += "unknown location '$($row.location)'"
         }
+        if ($row.role) { $row.role = Resolve-RuleName -Name $row.role -Table $rules.roles }
         if ($row.role -and $rules.roles.PSObject.Properties.Name -notcontains $row.role) {
             $errors += "unknown role '$($row.role)'"
+        }
+        if ($row.start_date) {
+            $parsed = Convert-ToIsoDate -Value $row.start_date
+            if (-not $parsed) { $errors += "start_date is not a date. Use 2026-10-20 or 20/10/2026" }
+            else { $row.start_date = $parsed }
         }
         $slug = Get-EmailSlug -First $row.first_name -Last $row.last_name
         $email = "$slug@$($config.default_domain)"
@@ -147,6 +192,7 @@ foreach ($row in $rows) {
             enabled     = $true
             groups      = $groups
             licence     = $rules.departments.($row.department).licence
+            start_date = $row.start_date
             created_at  = (Get-Date).ToUniversalTime().ToString("o")
         }
         $users += $user
@@ -154,6 +200,13 @@ foreach ($row in $rows) {
     }
     elseif ($Action -eq "leaver") {
         # Block sign-in, clear groups, keep the account as a record.
+        if ($row.last_day) {
+            $parsed = Convert-ToIsoDate -Value $row.last_day
+            if (-not $parsed) {
+                $events += [pscustomobject]@{ time = (Get-Date).ToUniversalTime().ToString("o"); action = "leaver"; status = "rejected"; employee_id = $row.employee_id; errors = @("last_day is not a date. Use 2026-10-31 or 31/10/2026") }
+                continue
+            }
+        }
         $user = $users | Where-Object { $_.employee_id -eq $row.employee_id -or $_.email -eq $row.email } | Select-Object -First 1
         if (-not $user) {
             $events += [pscustomobject]@{ time = (Get-Date).ToUniversalTime().ToString("o"); action = "leaver"; status = "not_found"; employee_id = $row.employee_id }
@@ -177,9 +230,16 @@ foreach ($row in $rows) {
             $events += [pscustomobject]@{ time = (Get-Date).ToUniversalTime().ToString("o"); action = "mover"; status = "rejected"; employee_id = $user.employee_id; errors = @("account is disabled") }
             continue
         }
-        $department = if ($row.new_department) { $row.new_department } else { $user.department }
-        $location = if ($row.new_location) { $row.new_location } else { $user.location }
-        $role = if ($row.new_role) { $row.new_role } else { $user.role }
+        if ($row.effective_date) {
+            $parsed = Convert-ToIsoDate -Value $row.effective_date
+            if (-not $parsed) {
+                $events += [pscustomobject]@{ time = (Get-Date).ToUniversalTime().ToString("o"); action = "mover"; status = "rejected"; employee_id = $user.employee_id; errors = @("effective_date is not a date. Use 2026-11-01 or 01/11/2026") }
+                continue
+            }
+        }
+        $department = if ($row.new_department) { Resolve-RuleName -Name $row.new_department -Table $rules.departments } else { $user.department }
+        $location = if ($row.new_location) { Resolve-RuleName -Name $row.new_location -Table $rules.locations } else { $user.location }
+        $role = if ($row.new_role) { Resolve-RuleName -Name $row.new_role -Table $rules.roles } else { $user.role }
         $user.department = $department
         $user.location = $location
         $user.role = $role

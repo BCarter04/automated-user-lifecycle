@@ -124,6 +124,34 @@ The window says PASS when those counts match.
 - The file used is copied to `inbox/` with the same time as the ticket note. `inbox/` is not uploaded.
 - A second run of the same person is unchanged, not rejected. PowerShell does the same.
 - The demo line says PASS when the sample counts match.
+- Preview shows a bad date before Run. Nothing is written at that point.
+- PowerShell matches the window: semicolon files, `finance` for Finance, and a UK date. A bad date is rejected.
+- `examples/demo-pass.png` is the sample result, so it can be seen without running the window.
+
+## What is done
+
+This public repo is finished as a demo and as a live check on one PC.
+
+- Joiner, mover, and leaver run on a local staff file. No tenant is contacted.
+- The window opens from Start-Here. No command is required.
+- Preview, run, dry run, find one person, rules, samples, and blank templates are on the page.
+- A second run is unchanged. A disabled account cannot be moved. A bad department or a bad date is rejected.
+- Excel files are accepted. Ten tests pass.
+- Ownership, the demo disclaimer, and this file are in the repo.
+
+## What is not done now, and what it will be
+
+A real Microsoft 365 tenant is not connected. That is deliberate. This repo must run without a login, and it must not hold a secret.
+
+When a developer tenant exists, the work is this:
+
+1. Copy `config.example.json` to `config.json` on the PC. `config.json` is not uploaded. Git ignores it.
+2. Put the tenant name in that file, for example `contoso.onmicrosoft.com`. The sample name `tenant.example.onmicrosoft.com` stays in the example file only.
+3. Put any app secret in an environment variable, not in `config.json` and not in GitHub.
+4. Keep the same CSV and the same rules file. The order stays validate, create, groups, licence, log.
+5. If one step fails, stop that person and write the error. Do not guess the next step.
+
+That connection is not part of this finished repo.
 
 ## What it does not do
 
@@ -137,6 +165,8 @@ It does not unlock accounts or change anyone else's machine.
 
 ## If you later connect a developer tenant
 
-Keep using the same CSV and the same rules file. Put the tenant name in an untracked `config.json`. Put any secret in an environment variable. Do not paste a secret into a file that git can see.
+This is not built now. The explanation is here so the later step is clear.
 
-The Graph calls, when you add them, should follow the same order as the demo: validate, create, groups, licence, log. If a step fails, stop that person and write the error. Do not continue and guess.
+Keep using the same CSV and the same rules file. Copy `config.example.json` to `config.json`. Put the tenant name in `config.json`. That file is not uploaded. Put any secret in an environment variable. Do not paste a secret into a file that git can see.
+
+The Graph calls, when they are added, should follow the same order as the demo: validate, create, groups, licence, log. If a step fails, stop that person and write the error. Do not continue and guess.
