@@ -316,19 +316,22 @@ PAGE = """<!DOCTYPE html>
   <h2>What the CSV must contain</h2>
   <p>The first row must be the column names, exactly as written here. One person is one row. Copy a sample into the box, then click Preview.</p>
   <p><b>Joiner.</b> Required: employee_id, first_name, last_name, department, job_title, location, role, manager_email, start_date. Department must be Finance, Sales, Infrastructure, or People. Role must be Staff or Manager. Location must be Corporate Office or Remote.</p>
-  <pre>employee_id,first_name,last_name,department,job_title,location,role,manager_email,start_date
+  <pre id="sample-joiner">employee_id,first_name,last_name,department,job_title,location,role,manager_email,start_date
 E2001,Nia,Cole,Sales,Account Executive,Corporate Office,Staff,maya.adebayo@example.com,2026-10-20</pre>
+  <button type="button" onclick="copySample('sample-joiner','joiner')">Copy joiner sample into the box</button>
   <p><b>Mover.</b> Required: employee_id, email. Add any of new_department, new_job_title, new_location, new_role, new_manager_email.</p>
-  <pre>employee_id,email,new_department,new_job_title,new_location,new_role,new_manager_email,effective_date
+  <pre id="sample-mover">employee_id,email,new_department,new_job_title,new_location,new_role,new_manager_email,effective_date
 E1001,ada.okoye@example.com,Infrastructure,IT Support Analyst,Corporate Office,Staff,maya.adebayo@example.com,2026-11-01</pre>
+  <button type="button" onclick="copySample('sample-mover','mover')">Copy mover sample into the box</button>
   <p><b>Leaver.</b> Required: employee_id, email. reason is the note on the ticket.</p>
-  <pre>employee_id,email,last_day,reason
+  <pre id="sample-leaver">employee_id,email,last_day,reason
 E1002,sam.patel@example.com,2026-10-31,Resignation</pre>
+  <button type="button" onclick="copySample('sample-leaver','leaver')">Copy leaver sample into the box</button>
   <p>The same samples are in samples/joiners.csv, samples/movers.csv, and samples/leavers.csv. Load sample joiner fills the box with the full file, including the bad row that is meant to be rejected.</p>
   <p>Click Preview first. It shows the first rows and does not write the staff file. Click Run only after the preview looks right. Dry run writes the ticket note and leaves the staff file unchanged. The file you use is copied to inbox with the same time as the ticket note. inbox is not uploaded to GitHub. Do not use a real employee export if this folder will be copied to GitHub.</p>
   <form method="post" action="/live">
     <label>Action
-      <select name="action">
+      <select name="action" id="action">
         <option>joiner</option>
         <option>mover</option>
         <option>leaver</option>

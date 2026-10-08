@@ -68,7 +68,7 @@ E1002,sam.patel@example.com,2026-10-31,Resignation
 
 `employee_id` and `email` find the person. `reason` is written on the ticket note.
 
-The full files you can load in the window are `samples/joiners.csv`, `samples/movers.csv`, and `samples/leavers.csv`. The window also shows these samples so they can be copied without opening the folder.
+The full files you can load in the window are `samples/joiners.csv`, `samples/movers.csv`, and `samples/leavers.csv`. The window also shows these samples. Copy joiner sample, Copy mover sample, and Copy leaver sample put that text in the box and set the action. You can then click Preview.
 
 ## What a joiner row must contain
 
