@@ -1,4 +1,5 @@
 employee_id,first_name,last_name,department,job_title,location,role,manager_email,start_date
+E1000,Maya,Adebayo,People,People Manager,Corporate Office,Manager,maya.adebayo@example.com,2026-10-01
 E1001,Ada,Okoye,Finance,Finance Analyst,Corporate Office,Staff,m.adebayo@example.com,2026-10-13
 E1002,Sam,Patel,Sales,Account Executive,Corporate Office,Staff,l.chen@example.com,2026-10-13
 E1003,Noah,Williams,Infrastructure,Systems Administrator,Corporate Office,Staff,m.adebayo@example.com,2026-10-20

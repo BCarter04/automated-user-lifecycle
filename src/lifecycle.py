@@ -86,12 +86,13 @@ class Lifecycle:
     events: what happened to each person on this run. Written at the end.
     """
 
-    def __init__(self, config: dict, rules: dict, directory_path: Path, log_dir: Path, report_dir: Path):
+    def __init__(self, config: dict, rules: dict, directory_path: Path, log_dir: Path, report_dir: Path, strict_manager: bool = False):
         self.config = config
         self.rules = rules
         self.directory_path = directory_path
         self.log_dir = log_dir
         self.report_dir = report_dir
+        self.strict_manager = strict_manager
         self.directory = self._load_directory()
         self.events: list[dict] = []
 
@@ -155,21 +156,38 @@ class Lifecycle:
         manager = row.get("manager_email", "")
         if manager and not EMAIL_RE.match(manager):
             errors.append("manager_email is not a valid address")
-        if self.find(employee_id=row.get("employee_id")):
-            errors.append("employee_id already exists")
+        if self.strict_manager and manager and not self.find(email=manager):
+            errors.append("manager is not in the directory")
+        existing = self.find(employee_id=row.get("employee_id"))
+        email = ""
         if row.get("first_name") and row.get("last_name"):
             email = f"{slug(row['first_name'], row['last_name'])}@{self.config['default_domain']}"
             for user in self.directory["users"]:
-                if user["email"].lower() == email.lower():
+                if user["email"].lower() == email.lower() and user["employee_id"] != row.get("employee_id"):
                     errors.append(f"email already exists: {email}")
                     break
+        if existing and email and existing["email"].lower() == email.lower():
+            return ["already provisioned, no change"]
+        if existing:
+            errors.append("employee_id already exists")
         return errors
 
     def join(self, row: dict) -> dict:
         """Create one account. Does nothing permanent if the row is invalid."""
         errors = self.validate_joiner(row)
+        if errors == ["already provisioned, no change"]:
+            existing = self.find(employee_id=row.get("employee_id"))
+            result = {
+                "employee_id": row.get("employee_id", ""),
+                "email": existing["email"] if existing else "",
+                "status": "unchanged",
+                "row": row.get("_row"),
+                "errors": ["already provisioned, no change"],
+            }
+            self.log("joiner", "unchanged", result)
+            return result
         if errors:
-            result = {"employee_id": row.get("employee_id", ""), "status": "rejected", "errors": errors}
+            result = {"employee_id": row.get("employee_id", ""), "status": "rejected", "row": row.get("_row"), "errors": errors}
             self.log("joiner", "rejected", result)
             return result
         email = f"{slug(row['first_name'], row['last_name'])}@{self.config['default_domain']}"
@@ -198,6 +216,7 @@ class Lifecycle:
             "employee_id": user["employee_id"],
             "email": email,
             "status": "created",
+            "row": row.get("_row"),
             "groups": groups,
             "licence": licence,
         }
@@ -343,20 +362,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rules", default=str(ROOT / "rules" / "department-rules.json"), help="Department, location, and role group map.")
     parser.add_argument("--directory", default=str(ROOT / "data" / "directory.json"), help="Local staff file. Created on first run. Not a real directory.")
     parser.add_argument("--dry-run", action="store_true", help="Check the CSV and write the report, but do not change the staff file.")
+    parser.add_argument("--strict-manager", action="store_true", help="Reject a joiner whose manager email is not already in the directory. Off for the demo.")
     return parser.parse_args()
 
 
 def print_result(item: dict) -> None:
-    """Print one person. Rejections include the reason, not only the word rejected."""
+    """Print one person. Rejections include the row and the reason."""
     reason = ""
     if item.get("errors"):
         reason = " — " + ", ".join(item["errors"])
-    print(f"  {item['status']:10} {item.get('employee_id', '')} {item.get('email', '')}{reason}")
+    row = f"row {item['row']}: " if item.get("row") else ""
+    print(f"  {item['status']:10} {row}{item.get('employee_id', '')} {item.get('email', '')}{reason}")
 
 
 def run_action(engine: Lifecycle, action: str, rows: list[dict]) -> list[dict]:
     results = []
-    for row in rows:
+    for number, row in enumerate(rows, start=2):
+        row = dict(row)
+        row["_row"] = number
         if action == "joiner":
             results.append(engine.join(row))
         elif action == "leaver":
@@ -364,6 +387,32 @@ def run_action(engine: Lifecycle, action: str, rows: list[dict]) -> list[dict]:
         else:
             results.append(engine.move(row))
     return results
+
+
+def write_demo_summary(report_dir: Path, tenant: str, steps: list[tuple[str, list[dict]]]) -> Path:
+    """One ticket note for the whole demo."""
+    report_dir.mkdir(parents=True, exist_ok=True)
+    path = report_dir / "demo-summary.md"
+    lines = [
+        "# Demo summary",
+        "",
+        "Demo only. This did not change a real tenant.",
+        "",
+        f"Tenant: `{tenant}`",
+        f"Generated: {utc_now()}",
+        "",
+        "Owner: Oluwatobiloba Benjamin Ogungbangbe. Not for sale.",
+        "",
+        "| Step | Status | Employee | Detail |",
+        "| --- | --- | --- | --- |",
+    ]
+    for action, results in steps:
+        for item in results:
+            detail = Lifecycle.event_detail(item)
+            lines.append(f"| {action} | {item['status']} | {item.get('employee_id', '')} | {detail} |")
+    lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
 
 
 def main() -> int:
@@ -395,27 +444,31 @@ def main() -> int:
     if args.action in {"joiner", "mover", "leaver"} and not args.input:
         print("This action needs --input. Example: --input samples/joiners.csv")
         return 1
-    engine = Lifecycle(config, rules, directory, ROOT / "logs", ROOT / "reports")
+    engine = Lifecycle(config, rules, directory, ROOT / "logs", ROOT / "reports", strict_manager=args.strict_manager)
     if args.action == "demo":
         if directory.exists():
             directory.unlink()
-        engine = Lifecycle(config, rules, directory, ROOT / "logs", ROOT / "reports")
+        engine = Lifecycle(config, rules, directory, ROOT / "logs", ROOT / "reports", strict_manager=args.strict_manager)
         steps = [
             ("joiner", ROOT / "samples" / "joiners.csv"),
             ("mover", ROOT / "samples" / "movers.csv"),
             ("leaver", ROOT / "samples" / "leavers.csv"),
         ]
         exit_code = 0
+        ran = []
         for action, path in steps:
             engine.events = []
             results = run_action(engine, action, read_csv(path))
             engine.save()
-            log_path, report_path = engine.write_reports(action)
+            _, report_path = engine.write_reports(action)
+            ran.append((action, results))
             print(f"{action}: report {report_path}")
             for item in results:
                 print_result(item)
-            if not any(item["status"] in {"created", "disabled", "moved"} for item in results):
+            if not any(item["status"] in {"created", "disabled", "moved", "unchanged"} for item in results):
                 exit_code = 1
+        summary = write_demo_summary(ROOT / "reports", config["tenant"], ran)
+        print(f"demo summary: {summary}")
         print("demo finished. Next: python3 src/lifecycle.py list")
         return exit_code
     results = run_action(engine, args.action, read_csv(Path(args.input)))
@@ -423,8 +476,9 @@ def main() -> int:
         engine.save()
     log_path, report_path = engine.write_reports(args.action)
     created = sum(1 for item in results if item["status"] in {"created", "disabled", "moved"})
-    rejected = len(results) - created
-    print(f"{args.action}: {created} completed, {rejected} rejected or not found")
+    unchanged = sum(1 for item in results if item["status"] == "unchanged")
+    rejected = len(results) - created - unchanged
+    print(f"{args.action}: {created} completed, {unchanged} already provisioned, {rejected} rejected or not found")
     print(f"audit log: {log_path}")
     print(f"report: {report_path}")
     print("Next: open the report. It is the ticket note for this run.")

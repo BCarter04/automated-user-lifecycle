@@ -61,6 +61,12 @@ python3 src/lifecycle.py demo
 python3 src/lifecycle.py list
 ```
 
+The demo writes `reports/demo-summary.md`. That is the one ticket note for the whole run.
+
+Run the same joiner file again and existing people are marked already provisioned, not rejected. A real problem, such as an unknown department, is still rejected and the row number is printed.
+
+`--strict-manager` rejects a joiner whose manager is not already in the directory. It is off for the demo, because the sample managers are placeholders. Maya Adebayo is the manager row, so `list` shows the managers group.
+
 To start the demo again:
 
 ```bash
@@ -80,7 +86,7 @@ What you should see:
 
 | Command | Expected result |
 | --- | --- |
-| joiner | 4 created, 1 rejected. The reason is printed: unknown department. |
+| joiner | 5 created, 1 rejected. Maya Adebayo is the manager row. E1005 is rejected, and the reason includes the row number. |
 | mover | Ada Okoye moves from Finance to Infrastructure. The report lists groups removed and groups added. |
 | leaver | Sam Patel is disabled. E9999 is reported as not found. The script does not invent that person. |
 

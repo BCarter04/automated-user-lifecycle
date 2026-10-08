@@ -37,7 +37,7 @@ class SampleWorkflowTest(unittest.TestCase):
         results = [engine.join(row) for row in lifecycle.read_csv(ROOT / "samples" / "joiners.csv")]
         created = [item for item in results if item["status"] == "created"]
         rejected = [item for item in results if item["status"] == "rejected"]
-        self.assertEqual(len(created), 4)
+        self.assertEqual(len(created), 5)
         self.assertEqual(rejected[0]["employee_id"], "E1005")
         self.assertTrue(any("unknown department" in error for error in rejected[0]["errors"]))
 
@@ -66,6 +66,26 @@ class SampleWorkflowTest(unittest.TestCase):
         self.assertIn("SG-Finance-Users", result["groups_removed"])
         self.assertIn("SG-Infrastructure-Users", result["groups_added"])
         self.assertIn("SG-M365-Standard", engine.find(employee_id="E1001")["groups"])
+        self.assertIn("SG-Managers", engine.find(employee_id="E1000")["groups"])
+
+    def test_second_run_is_unchanged_not_rejected(self):
+        engine = self.engine()
+        row = lifecycle.read_csv(ROOT / "samples" / "joiners.csv")[0]
+        self.assertEqual(engine.join(row)["status"], "created")
+        again = engine.join(row)
+        self.assertEqual(again["status"], "unchanged")
+        self.assertIn("already provisioned", again["errors"][0])
+
+    def test_strict_manager_rejects_unknown_manager(self):
+        engine = self.engine()
+        engine.strict_manager = True
+        result = engine.join({
+            "employee_id": "E9", "first_name": "Nia", "last_name": "Cole",
+            "department": "Finance", "job_title": "Analyst", "location": "Corporate Office",
+            "role": "Staff", "manager_email": "missing.manager@example.com", "start_date": "2026-10-13",
+        })
+        self.assertEqual(result["status"], "rejected")
+        self.assertTrue(any("manager is not in the directory" in error for error in result["errors"]))
 
     def test_leaver_disables_and_missing_person_is_not_created(self):
         engine = self.engine()

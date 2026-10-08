@@ -4,6 +4,7 @@ logs/*.log
 logs/*.json
 reports/*.json
 reports/*.md
+!examples/
 config.json
 .env
 *.pfx
