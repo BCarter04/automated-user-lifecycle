@@ -76,7 +76,7 @@ Excel on a UK PC may save semicolons instead of commas, or put a hidden mark at 
 
 `finance`, `Finance`, and ` finance ` are the same department. The same is true for location and role. The saved account uses the name from the rules file.
 
-A start date must be a real date: `2026-10-20` or `20/10/2026`. It is stored as `2026-10-20`. `32/10/2026` and `tomorrow` are rejected, and that person is not created. A mover `effective_date` and a leaver `last_day` use the same rule when those columns are filled. The result line shows the stored date and the department name from the rules file.
+A start date must be a real date: `2026-10-20` or `20/10/2026`. It is stored as `2026-10-20`. `32/10/2026`, `31/02/2026`, and `tomorrow` are rejected, and that person is not created. The result says `start_date is not a date`. A mover `effective_date` and a leaver `last_day` use the same rule when those columns are filled. The result line shows the stored date and the department name from the rules file.
 
 ## What a joiner row must contain
 

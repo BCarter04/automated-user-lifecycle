@@ -117,6 +117,18 @@ class SampleWorkflowTest(unittest.TestCase):
         self.assertEqual(result["status"], "rejected")
         self.assertTrue(any("start_date is not a date" in error for error in result["errors"]))
         self.assertIsNone(engine.find(employee_id="E8"))
+
+    def test_uk_start_date_is_stored(self):
+        engine = self.engine()
+        result = engine.join({
+            "employee_id": "E7", "first_name": "Good", "last_name": "Date",
+            "department": "Finance", "job_title": "Analyst", "location": "Corporate Office",
+            "role": "Staff", "manager_email": "m@example.com", "start_date": "20/10/2026",
+        })
+        self.assertEqual(result["status"], "created")
+        self.assertEqual(result["start_date"], "2026-10-20")
+
+    def test_report_includes_groups_removed_and_added(self):
         engine = self.engine()
         for row in lifecycle.read_csv(ROOT / "samples" / "joiners.csv"):
             engine.join(row)
