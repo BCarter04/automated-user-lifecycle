@@ -70,6 +70,8 @@ E1002,sam.patel@example.com,2026-10-31,Resignation
 
 The full files you can load in the window are `samples/joiners.csv`, `samples/movers.csv`, and `samples/leavers.csv`. The window also shows these samples. Copy joiner sample, Copy mover sample, and Copy leaver sample put that text in the box and set the action. You can then click Preview.
 
+Blank templates, header only, are `samples/blank-joiner.csv`, `samples/blank-mover.csv`, and `samples/blank-leaver.csv`. The window links to them. Save the file, add rows in Excel, then choose that file in the window. Do not change the header names.
+
 ## What a joiner row must contain
 
 `employee_id` is the HR number. It must be unique.
