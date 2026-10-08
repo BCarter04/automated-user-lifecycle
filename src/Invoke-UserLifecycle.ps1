@@ -27,10 +27,9 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("joiner", "mover", "leaver")]
+    [ValidateSet("demo", "joiner", "mover", "leaver", "list", "reset")]
     [string]$Action,
 
-    [Parameter(Mandatory = $true)]
     [string]$InputPath,
 
     [string]$ConfigPath = (Join-Path $PSScriptRoot "..\config.example.json"),
@@ -79,6 +78,26 @@ if (Test-Path $DirectoryPath) {
 }
 if (-not $directory.users) { $directory | Add-Member -NotePropertyName users -NotePropertyValue @() -Force }
 
+if ($Action -eq "reset") {
+    if (Test-Path $DirectoryPath) { Remove-Item $DirectoryPath; Write-Host "reset: removed $DirectoryPath" }
+    else { Write-Host "reset: no staff file to remove" }
+    return
+}
+if ($Action -eq "list") {
+    if (-not (Test-Path $DirectoryPath)) { Write-Host "list: no staff file yet. Run demo or joiner first."; return }
+    $directory.users | ForEach-Object { Write-Host ("{0}  enabled={1}  {2}  {3}" -f $_.employee_id, $_.enabled, $_.department, $_.email); Write-Host ("  groups: {0}" -f (($_.groups -join ", "))) }
+    return
+}
+if ($Action -eq "demo") {
+    & $PSCommandPath -Action reset -DirectoryPath $DirectoryPath -ConfigPath $ConfigPath -RulesPath $RulesPath
+    & $PSCommandPath -Action joiner -InputPath (Join-Path $PSScriptRoot "..\samples\joiners.csv") -DirectoryPath $DirectoryPath -ConfigPath $ConfigPath -RulesPath $RulesPath
+    & $PSCommandPath -Action mover -InputPath (Join-Path $PSScriptRoot "..\samples\movers.csv") -DirectoryPath $DirectoryPath -ConfigPath $ConfigPath -RulesPath $RulesPath
+    & $PSCommandPath -Action leaver -InputPath (Join-Path $PSScriptRoot "..\samples\leavers.csv") -DirectoryPath $DirectoryPath -ConfigPath $ConfigPath -RulesPath $RulesPath
+    Write-Host "demo finished. Next: .\src\Invoke-UserLifecycle.ps1 -Action list"
+    return
+}
+if (-not $InputPath) { Write-Host "This action needs -InputPath. Example: -InputPath .\samples\joiners.csv"; exit 1 }
+
 $rows = Import-Csv -Path $InputPath
 $events = @()
 $users = @($directory.users)
@@ -93,6 +112,16 @@ foreach ($row in $rows) {
         if ($row.department -and $rules.departments.PSObject.Properties.Name -notcontains $row.department) {
             $errors += "unknown department '$($row.department)'"
         }
+        if ($row.location -and $rules.locations.PSObject.Properties.Name -notcontains $row.location) {
+            $errors += "unknown location '$($row.location)'"
+        }
+        if ($row.role -and $rules.roles.PSObject.Properties.Name -notcontains $row.role) {
+            $errors += "unknown role '$($row.role)'"
+        }
+        $slug = Get-EmailSlug -First $row.first_name -Last $row.last_name
+        $email = "$slug@$($config.default_domain)"
+        if ($users | Where-Object { $_.employee_id -eq $row.employee_id }) { $errors += "employee_id already exists" }
+        if ($users | Where-Object { $_.email -eq $email }) { $errors += "email already exists: $email" }
         if ($errors.Count -gt 0) {
             $events += [pscustomobject]@{ time = (Get-Date).ToUniversalTime().ToString("o"); action = "joiner"; status = "rejected"; employee_id = $row.employee_id; errors = $errors }
             continue
@@ -139,6 +168,10 @@ foreach ($row in $rows) {
             $events += [pscustomobject]@{ time = (Get-Date).ToUniversalTime().ToString("o"); action = "mover"; status = "not_found"; employee_id = $row.employee_id }
             continue
         }
+        if (-not $user.enabled) {
+            $events += [pscustomobject]@{ time = (Get-Date).ToUniversalTime().ToString("o"); action = "mover"; status = "rejected"; employee_id = $user.employee_id; errors = @("account is disabled") }
+            continue
+        }
         $department = if ($row.new_department) { $row.new_department } else { $user.department }
         $location = if ($row.new_location) { $row.new_location } else { $user.location }
         $role = if ($row.new_role) { $row.new_role } else { $user.role }
@@ -147,8 +180,11 @@ foreach ($row in $rows) {
         $user.role = $role
         if ($row.new_job_title) { $user.job_title = $row.new_job_title }
         if ($row.new_manager_email) { $user.manager_email = $row.new_manager_email }
+        $oldGroups = @($user.groups)
         $user.groups = @(Get-Groups -Rules $rules -Department $department -Location $location -Role $role)
-        $events += [pscustomobject]@{ time = (Get-Date).ToUniversalTime().ToString("o"); action = "mover"; status = "moved"; employee_id = $user.employee_id; email = $user.email; department = $department }
+        $removed = @($oldGroups | Where-Object { $user.groups -notcontains $_ })
+        $added = @($user.groups | Where-Object { $oldGroups -notcontains $_ })
+        $events += [pscustomobject]@{ time = (Get-Date).ToUniversalTime().ToString("o"); action = "mover"; status = "moved"; employee_id = $user.employee_id; email = $user.email; department = $department; groups_removed = $removed; groups_added = $added }
     }
 }
 
@@ -166,8 +202,13 @@ $logPath = Join-Path $logDir "$Action-$stamp.json"
     ConvertTo-Json -Depth 6 |
     Set-Content -Path $logPath -Encoding utf8
 
-$events | Format-Table status, employee_id, email -AutoSize
+$events | ForEach-Object {
+    $reason = ""
+    if ($_.errors) { $reason = " — " + ($_.errors -join ", ") }
+    Write-Host ("  {0,-10} {1} {2}{3}" -f $_.status, $_.employee_id, $_.email, $reason)
+}
 Write-Host "audit log: $logPath"
+Write-Host "Next: open the report folder. The log is the ticket note for this run."
 if ($config.mode -eq "graph") {
     Write-Warning "Graph mode is not implemented in this portfolio build. Use demo mode unless you add Graph calls locally and keep secrets out of git."
 }

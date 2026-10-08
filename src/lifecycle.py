@@ -157,6 +157,12 @@ class Lifecycle:
             errors.append("manager_email is not a valid address")
         if self.find(employee_id=row.get("employee_id")):
             errors.append("employee_id already exists")
+        if row.get("first_name") and row.get("last_name"):
+            email = f"{slug(row['first_name'], row['last_name'])}@{self.config['default_domain']}"
+            for user in self.directory["users"]:
+                if user["email"].lower() == email.lower():
+                    errors.append(f"email already exists: {email}")
+                    break
         return errors
 
     def join(self, row: dict) -> dict:
@@ -305,21 +311,34 @@ class Lifecycle:
             "| --- | --- | --- |",
         ]
         for event in self.events:
-            detail = event.get("email") or ", ".join(event.get("errors", [])) or event.get("status")
+            detail = self.event_detail(event)
             lines.append(f"| {event['status']} | {event.get('employee_id', '')} | {detail} |")
         lines.append("")
         report_path.write_text("\n".join(lines), encoding="utf-8")
         return log_path, report_path
+
+    @staticmethod
+    def event_detail(event: dict) -> str:
+        """One readable cell for the report. Movers include groups off and on."""
+        if event.get("errors"):
+            return ", ".join(event["errors"])
+        removed = event.get("groups_removed")
+        added = event.get("groups_added")
+        if removed is not None or added is not None:
+            off = ", ".join(removed or []) or "none"
+            on = ", ".join(added or []) or "none"
+            return f"{event.get('email', '')}; removed: {off}; added: {on}"
+        return event.get("email") or event.get("status") or ""
 
 
 def parse_args() -> argparse.Namespace:
     """Command line. action is joiner, mover, or leaver. input is the CSV."""
     parser = argparse.ArgumentParser(
         description="Demo only. Joiner, mover, and leaver against a local directory. Does not connect to a tenant.",
-        epilog="Start with: python3 src/lifecycle.py joiner --input samples/joiners.csv",
+        epilog="Start with: python3 src/lifecycle.py demo",
     )
-    parser.add_argument("action", choices=["joiner", "mover", "leaver"], help="joiner creates, mover changes department, leaver disables")
-    parser.add_argument("--input", required=True, help="CSV file for this action. Use a file in samples/ for the demo.")
+    parser.add_argument("action", choices=["demo", "joiner", "mover", "leaver", "list", "reset"], help="demo runs the samples; list shows the staff file; reset deletes only that file")
+    parser.add_argument("--input", help="CSV file for joiner, mover, or leaver. Not used by demo, list, or reset.")
     parser.add_argument("--config", default=str(ROOT / "config.example.json"), help="Settings file. The sample uses a fake tenant.")
     parser.add_argument("--rules", default=str(ROOT / "rules" / "department-rules.json"), help="Department, location, and role group map.")
     parser.add_argument("--directory", default=str(ROOT / "data" / "directory.json"), help="Local staff file. Created on first run. Not a real directory.")
@@ -327,28 +346,79 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def print_result(item: dict) -> None:
+    """Print one person. Rejections include the reason, not only the word rejected."""
+    reason = ""
+    if item.get("errors"):
+        reason = " — " + ", ".join(item["errors"])
+    print(f"  {item['status']:10} {item.get('employee_id', '')} {item.get('email', '')}{reason}")
+
+
+def run_action(engine: Lifecycle, action: str, rows: list[dict]) -> list[dict]:
+    results = []
+    for row in rows:
+        if action == "joiner":
+            results.append(engine.join(row))
+        elif action == "leaver":
+            results.append(engine.leave(row))
+        else:
+            results.append(engine.move(row))
+    return results
+
+
 def main() -> int:
     """Load files, process every row, save, print a one-line result per person."""
     args = parse_args()
     print("DEMO ONLY. No tenant is contacted. Results are written on this computer.")
+    print("Owner: Oluwatobiloba Benjamin Ogungbangbe. Not for sale. See LICENSE.")
     config = load_json(Path(args.config))
     rules = load_json(Path(args.rules))
-    engine = Lifecycle(
-        config,
-        rules,
-        Path(args.directory),
-        ROOT / "logs",
-        ROOT / "reports",
-    )
-    rows = read_csv(Path(args.input))
-    results = []
-    for row in rows:
-        if args.action == "joiner":
-            results.append(engine.join(row))
-        elif args.action == "leaver":
-            results.append(engine.leave(row))
+    directory = Path(args.directory)
+    if args.action == "reset":
+        if directory.exists():
+            directory.unlink()
+            print(f"reset: removed {directory}")
         else:
-            results.append(engine.move(row))
+            print("reset: no staff file to remove")
+        return 0
+    if args.action == "list":
+        if not directory.exists():
+            print("list: no staff file yet. Run demo or joiner first.")
+            return 0
+        data = load_json(directory)
+        print(f"{'ID':6} {'Enabled':7} {'Department':16} Email")
+        for user in data.get("users", []):
+            enabled = "yes" if user.get("enabled") else "no"
+            print(f"{user['employee_id']:6} {enabled:7} {user['department']:16} {user['email']}")
+            print(f"       groups: {', '.join(user.get('groups') or []) or 'none'}")
+        return 0
+    if args.action in {"joiner", "mover", "leaver"} and not args.input:
+        print("This action needs --input. Example: --input samples/joiners.csv")
+        return 1
+    engine = Lifecycle(config, rules, directory, ROOT / "logs", ROOT / "reports")
+    if args.action == "demo":
+        if directory.exists():
+            directory.unlink()
+        engine = Lifecycle(config, rules, directory, ROOT / "logs", ROOT / "reports")
+        steps = [
+            ("joiner", ROOT / "samples" / "joiners.csv"),
+            ("mover", ROOT / "samples" / "movers.csv"),
+            ("leaver", ROOT / "samples" / "leavers.csv"),
+        ]
+        exit_code = 0
+        for action, path in steps:
+            engine.events = []
+            results = run_action(engine, action, read_csv(path))
+            engine.save()
+            log_path, report_path = engine.write_reports(action)
+            print(f"{action}: report {report_path}")
+            for item in results:
+                print_result(item)
+            if not any(item["status"] in {"created", "disabled", "moved"} for item in results):
+                exit_code = 1
+        print("demo finished. Next: python3 src/lifecycle.py list")
+        return exit_code
+    results = run_action(engine, args.action, read_csv(Path(args.input)))
     if not args.dry_run:
         engine.save()
     log_path, report_path = engine.write_reports(args.action)
@@ -359,7 +429,7 @@ def main() -> int:
     print(f"report: {report_path}")
     print("Next: open the report. It is the ticket note for this run.")
     for item in results:
-        print(f"  {item['status']:10} {item.get('employee_id', '')} {item.get('email', '')}")
+        print_result(item)
     return 0 if created else 1
 
 

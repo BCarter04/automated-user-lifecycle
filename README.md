@@ -52,9 +52,23 @@ It runs on any machine with Python 3. No tenant, password, certificate, or clien
 You need Python 3. No install, no login, no admin rights.
 
 1. Open a terminal in this folder.
-2. Run the three commands below, in this order. Joiner first, then mover, then leaver. The mover and leaver look up people the joiner just created.
-3. Open the newest file in `reports/`. That is the ticket note.
-4. Open `data/directory.json` if you want to see the fake staff list. It is created on your machine and is not uploaded to GitHub.
+2. Run the demo. It clears the local staff file, then runs joiner, mover, and leaver.
+3. Run list to see who is enabled and which groups they have.
+4. Open `examples/mover-report.md` if you want to see a ticket note before you run anything. A real run writes a new file in `reports/`.
+
+```bash
+python3 src/lifecycle.py demo
+python3 src/lifecycle.py list
+```
+
+To start the demo again:
+
+```bash
+python3 src/lifecycle.py reset
+python3 src/lifecycle.py demo
+```
+
+You can still run the steps one at a time:
 
 ```bash
 python3 src/lifecycle.py joiner --input samples/joiners.csv
@@ -66,16 +80,25 @@ What you should see:
 
 | Command | Expected result |
 | --- | --- |
-| joiner | 4 created, 1 rejected. E1005 is rejected because `UnknownDept` is not in the rules file. |
-| mover | Ada Okoye moves from Finance to Infrastructure. Finance-only groups come off. |
+| joiner | 4 created, 1 rejected. The reason is printed: unknown department. |
+| mover | Ada Okoye moves from Finance to Infrastructure. The report lists groups removed and groups added. |
 | leaver | Sam Patel is disabled. E9999 is reported as not found. The script does not invent that person. |
+
+A second Ada Okoye is rejected because the email already exists. A disabled account cannot be moved.
 
 Add `--dry-run` if you only want the checks and the report. The staff file is left unchanged.
 
-On Windows, the PowerShell script is the same demo:
+On Windows:
 
 ```powershell
-.\src\Invoke-UserLifecycle.ps1 -Action joiner -InputPath .\samples\joiners.csv
+.\src\Invoke-UserLifecycle.ps1 -Action demo
+.\src\Invoke-UserLifecycle.ps1 -Action list
+```
+
+Check the sample rules with:
+
+```bash
+python3 -m unittest tests/test_lifecycle.py
 ```
 
 Help, if you forget the flags:
@@ -86,6 +109,9 @@ python3 src/lifecycle.py --help
 
 ## What each command is for
 
+- `demo` runs the three sample files in order. It clears the local staff file first.
+- `list` shows each person, whether they can sign in, and their groups.
+- `reset` deletes only `data/directory.json`.
 - `joiner` is a new employee. Bad rows are rejected and are not created.
 - `mover` is a department, location, or role change. Old groups come off. New groups go on.
 - `leaver` blocks sign-in, clears groups, and keeps the account as a record. It does not delete the person.
