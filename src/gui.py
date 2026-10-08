@@ -100,9 +100,7 @@ def run_rows(action: str, rows: list[dict], dry_run: bool = False, source_name: 
         "",
     ]
     for item in results:
-        status = item["status"]
-        if dry_run and status in {"created", "moved", "disabled"}:
-            status = "would " + status
+        status = {"created": "would create", "moved": "would move", "disabled": "would disable"}.get(item["status"], item["status"]) if dry_run else item["status"]
         reason = ", ".join(item.get("errors") or [])
         extra = f" — {reason}" if reason else ""
         lines.append(f"{status:14} {item.get('employee_id', '')} {item.get('email', '')}{extra}")
