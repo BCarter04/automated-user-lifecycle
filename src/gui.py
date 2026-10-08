@@ -327,7 +327,7 @@ E1001,ada.okoye@example.com,Infrastructure,IT Support Analyst,Corporate Office,S
   <pre id="sample-leaver">employee_id,email,last_day,reason
 E1002,sam.patel@example.com,2026-10-31,Resignation</pre>
   <button type="button" onclick="copySample('sample-leaver','leaver')">Copy leaver sample into the box</button>
-  <p>Blank files, header only, if you want to fill them in Excel: <a href="/sample/blank-joiner">blank joiner</a>, <a href="/sample/blank-mover">blank mover</a>, <a href="/sample/blank-leaver">blank leaver</a>. Save the download, add rows, then choose that file above. A file saved by Excel is accepted, including a semicolon list and a hidden mark at the start. finance and Finance are the same department.</p>
+  <p>Blank files, header only, if you want to fill them in Excel: <a href="/sample/blank-joiner">blank joiner</a>, <a href="/sample/blank-mover">blank mover</a>, <a href="/sample/blank-leaver">blank leaver</a>. Save the download, add rows, then choose that file above. A file saved by Excel is accepted, including a semicolon list and a hidden mark at the start. finance and Finance are the same department. 20/10/2026 is stored as 2026-10-20.</p>
   <p>Click Preview first. It shows the first rows and does not write the staff file. Click Run only after the preview looks right. Dry run writes the ticket note and leaves the staff file unchanged. The file you use is copied to inbox with the same time as the ticket note. inbox is not uploaded to GitHub. Do not use a real employee export if this folder will be copied to GitHub.</p>
   <form method="post" action="/live">
     <label>Action

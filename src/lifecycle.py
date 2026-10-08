@@ -91,6 +91,17 @@ def canonical(name: str, choices: dict) -> str:
     return name.strip()
 
 
+def normal_date(value: str) -> str:
+    """Turn a UK or Excel date into YYYY-MM-DD. Leave anything else unchanged."""
+    text = value.strip()
+    for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d/%m/%y"):
+        try:
+            return datetime.strptime(text, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return text
+
+
 def slug(first: str, last: str) -> str:
     """Build the mailbox name. 'Ada Okoye' becomes 'ada.okoye'."""
     raw = f"{first}.{last}".lower()
@@ -176,6 +187,8 @@ class Lifecycle:
         row["role"] = role
         if role and role not in self.rules["roles"]:
             errors.append(f"unknown role '{role}'")
+        if row.get("start_date"):
+            row["start_date"] = normal_date(row["start_date"])
         manager = row.get("manager_email", "")
         if manager and not EMAIL_RE.match(manager):
             errors.append("manager_email is not a valid address")

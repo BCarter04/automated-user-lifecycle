@@ -76,6 +76,8 @@ Excel on a UK PC may save semicolons instead of commas, or put a hidden mark at 
 
 `finance`, `Finance`, and ` finance ` are the same department. The same is true for location and role. The saved account uses the name from the rules file.
 
+A start date can be `2026-10-20` or `20/10/2026`. It is stored as `2026-10-20`. A date that is not a date is kept as typed and does not stop the row.
+
 ## What a joiner row must contain
 
 `employee_id` is the HR number. It must be unique.
