@@ -103,6 +103,10 @@ def run_rows(action: str, rows: list[dict], dry_run: bool = False, source_name: 
         status = {"created": "would create", "moved": "would move", "disabled": "would disable"}.get(item["status"], item["status"]) if dry_run else item["status"]
         reason = ", ".join(item.get("errors") or [])
         extra = f" — {reason}" if reason else ""
+        removed = item.get("groups_removed")
+        added = item.get("groups_added")
+        if removed is not None or added is not None:
+            extra += f" | off: {', '.join(removed or []) or 'none'} | on: {', '.join(added or []) or 'none'}"
         lines.append(f"{status:14} {item.get('employee_id', '')} {item.get('email', '')}{extra}")
     return "\n".join(lines)
 
@@ -177,10 +181,22 @@ def run_demo() -> str:
         for item in results:
             reason = ", ".join(item.get("errors") or [])
             extra = f" — {reason}" if reason else ""
+            removed = item.get("groups_removed")
+            added = item.get("groups_added")
+            if removed is not None or added is not None:
+                extra += f" | off: {', '.join(removed or []) or 'none'} | on: {', '.join(added or []) or 'none'}"
             parts.append(f"  {item['status']:10} {item.get('employee_id', '')} {item.get('email', '')}{extra}")
         parts.append("")
     summary = lifecycle.write_demo_summary(ROOT / "reports", config["tenant"], ran)
+    created = sum(1 for item in ran[0][1] if item["status"] == "created")
+    rejected = sum(1 for item in ran[0][1] if item["status"] == "rejected")
+    moved = sum(1 for item in ran[1][1] if item["status"] == "moved")
+    disabled = sum(1 for item in ran[2][1] if item["status"] == "disabled")
+    missing = sum(1 for item in ran[2][1] if item["status"] == "not_found")
+    ok = created == 5 and rejected == 1 and moved == 1 and disabled == 1 and missing == 1
+    parts.append("PASS. This matches the sample result." if ok else "CHECK. This does not match the sample result.")
     parts.append(f"Ticket note: {summary}")
+    parts.append("Next: Show the staff list, or Find one person, for example E1001.")
     return "DEMO ONLY. No tenant was contacted.\n\n" + "\n".join(parts)
 
 
