@@ -31,6 +31,45 @@ Leaver means the person is leaving. The script finds the account, blocks sign-in
 - `logs/` is the audit log. Every create, reject, move, and disable is a line with a time.
 - `reports/` is the short ticket note in Markdown.
 
+## What the CSV must contain
+
+The first row is the column names. The names must match. One person is one row. A blank required field is rejected. The staff file is not changed for that row.
+
+Joiner, copy this header:
+
+```text
+employee_id,first_name,last_name,department,job_title,location,role,manager_email,start_date
+E2001,Nia,Cole,Sales,Account Executive,Corporate Office,Staff,maya.adebayo@example.com,2026-10-20
+```
+
+- `employee_id` is the HR number. It must be unique.
+- `first_name` and `last_name` build the email. Ada Okoye becomes `ada.okoye@example.com`.
+- `department` must be in the rules file: Finance, Sales, Infrastructure, or People. `UnknownDept` is rejected on purpose.
+- `location` must be Corporate Office or Remote.
+- `role` is Staff or Manager. Manager adds the managers group.
+- `manager_email` must look like an email address.
+- `job_title` and `start_date` are stored. They do not pick groups.
+
+Mover, copy this header:
+
+```text
+employee_id,email,new_department,new_job_title,new_location,new_role,new_manager_email,effective_date
+E1001,ada.okoye@example.com,Infrastructure,IT Support Analyst,Corporate Office,Staff,maya.adebayo@example.com,2026-11-01
+```
+
+`employee_id` and `email` find the person. Only fill the `new_` columns that changed.
+
+Leaver, copy this header:
+
+```text
+employee_id,email,last_day,reason
+E1002,sam.patel@example.com,2026-10-31,Resignation
+```
+
+`employee_id` and `email` find the person. `reason` is written on the ticket note.
+
+The full files you can load in the window are `samples/joiners.csv`, `samples/movers.csv`, and `samples/leavers.csv`. The window also shows these samples so they can be copied without opening the folder.
+
 ## What a joiner row must contain
 
 `employee_id` is the HR number. It must be unique.
@@ -60,11 +99,23 @@ Dry-run still checks the rows and writes the report. It does not change the dire
 
 ## What the sample run proves
 
-Joiners: four people are created. E1005 is rejected because the department is not in the rules.
+Joiners: five people are created. Maya Adebayo is the manager row, so the managers group appears. E1005 is rejected because the department is not in the rules and the manager email is missing.
 
-Mover: Ada moves from Finance to Infrastructure. Sales-style finance groups come off. Infrastructure groups go on. Her manager stays on the account.
+Mover: Ada moves from Finance to Infrastructure. Finance groups come off. Infrastructure groups go on. The shared Microsoft 365 group stays.
 
 Leaver: Sam Patel is disabled, groups cleared, licence recorded. E9999 is not found, so the script says so and does nothing else.
+
+The window says PASS when those counts match.
+
+## What was added
+
+- `Start-Here.bat` and `Start-Here.sh` open a browser window. No command to type.
+- The window sets up folders, runs the sample, lists staff, finds one person, and shows the rules.
+- Live use takes a CSV from a file, a path, or a paste. Preview does not write. Run writes. Dry run says would create and does not change the staff file.
+- A missing column stops the run before the staff file is touched.
+- The file used is copied to `inbox/` with the same time as the ticket note. `inbox/` is not uploaded.
+- A second run of the same person is unchanged, not rejected. PowerShell does the same.
+- The demo line says PASS when the sample counts match.
 
 ## What it does not do
 
