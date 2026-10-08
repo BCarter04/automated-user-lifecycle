@@ -1,0 +1,6 @@
+employee_id,first_name,last_name,department,job_title,location,role,manager_email,start_date
+E1001,Ada,Okoye,Finance,Finance Analyst,Corporate Office,Staff,m.adebayo@example.com,2026-10-13
+E1002,Sam,Patel,Sales,Account Executive,Corporate Office,Staff,l.chen@example.com,2026-10-13
+E1003,Noah,Williams,Infrastructure,Systems Administrator,Corporate Office,Staff,m.adebayo@example.com,2026-10-20
+E1004,Ife,Adebayo,People,HR Coordinator,Corporate Office,Staff,m.adebayo@example.com,2026-10-20
+E1005,Bad,Record,UnknownDept,Temp,Corporate Office,Staff,,2026-10-20

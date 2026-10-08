@@ -1,0 +1,9 @@
+{
+  "_note": "Settings for the demo. tenant and default_domain are fake. Copy this file to config.json if you change them. Do not put passwords or secrets here.",
+  "tenant": "tenant.example.onmicrosoft.com",
+  "mode": "demo",
+  "licence_sku": "Microsoft 365 E3",
+  "default_domain": "example.com",
+  "require_manager": true,
+  "notes": "Demo mode stores users in data/directory.json. No tenant, secret, or password is used."
+}

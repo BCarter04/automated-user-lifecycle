@@ -1,0 +1,3 @@
+employee_id,email,last_day,reason
+E1002,sam.patel@example.com,2026-10-31,Resignation
+E9999,missing.person@example.com,2026-10-31,Resignation

@@ -1,0 +1,2 @@
+employee_id,email,new_department,new_job_title,new_location,new_role,new_manager_email,effective_date
+E1001,ada.okoye@example.com,Infrastructure,IT Support Analyst,Corporate Office,Staff,m.adebayo@example.com,2026-11-01

@@ -1,0 +1,11 @@
+# Local demo directory and run logs. Never commit a real tenant export.
+data/directory.json
+logs/*.log
+logs/*.json
+reports/*.json
+reports/*.md
+config.json
+.env
+*.pfx
+*.pem
+*.key

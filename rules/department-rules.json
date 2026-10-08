@@ -1,0 +1,43 @@
+{
+  "_note": "This file decides access. The script reads it. Department sets the main groups and licence. Location adds the site group. Role adds extra groups such as managers. Change this file to fit another company.",
+  "departments": {
+    "Finance": {
+      "groups": ["SG-Finance-Users", "SG-Finance-SharePoint", "SG-M365-Standard"],
+      "licence": "Microsoft 365 E3",
+      "apps": ["Excel", "Teams", "Finance portal"]
+    },
+    "Sales": {
+      "groups": ["SG-Sales-Users", "SG-CRM-Users", "SG-M365-Standard"],
+      "licence": "Microsoft 365 E3",
+      "apps": ["Teams", "CRM", "Outlook"]
+    },
+    "Infrastructure": {
+      "groups": ["SG-Infrastructure-Users", "SG-IT-Tools", "SG-M365-Standard"],
+      "licence": "Microsoft 365 E3",
+      "apps": ["Teams", "Admin center", "Remote tools"]
+    },
+    "People": {
+      "groups": ["SG-People-Users", "SG-HR-SharePoint", "SG-M365-Standard"],
+      "licence": "Microsoft 365 E3",
+      "apps": ["Teams", "SharePoint"]
+    }
+  },
+  "locations": {
+    "Corporate Office": {
+      "groups": ["SG-Site-Corporate"],
+      "resources": ["Printer-Floor-2", "Wi-Fi-Corporate", "VPN-Corporate"]
+    },
+    "Warehouse": {
+      "groups": ["SG-Site-Warehouse"],
+      "resources": ["Printer-Warehouse", "Wi-Fi-Warehouse"]
+    }
+  },
+  "roles": {
+    "Manager": {
+      "groups": ["SG-Managers"]
+    },
+    "Staff": {
+      "groups": []
+    }
+  }
+}
