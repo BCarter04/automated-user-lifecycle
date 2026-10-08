@@ -56,7 +56,7 @@ The window has the full steps:
 1. Set up this computer. It creates `data`, `logs`, `reports`, and `inbox` on this PC. Nothing is downloaded.
 2. Run the sample demo. Fake people only.
 3. Show the staff list, or open the ticket note.
-4. Live use: paste a CSV, or type the full path of a CSV already on this PC, then click Run on this PC.
+4. Live use: choose a CSV, click Preview, then click Run. Tick dry run if you only want the ticket note. Find one person shows department, manager, groups, licence, and whether sign-in is blocked.
 
 Live use writes `data/directory.json`, a log, and a ticket note on this computer. It does not contact a tenant. Do not put a real employee export in a folder you will upload to GitHub.
 

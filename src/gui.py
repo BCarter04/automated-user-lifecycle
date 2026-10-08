@@ -258,9 +258,10 @@ PAGE = """<!DOCTYPE html>
     <li>Double-click Start-Here. You are already in this window if you can read this.</li>
     <li>Click <b>Set up this computer</b>. It creates data, logs, reports, and inbox. Nothing is downloaded.</li>
     <li>Click <b>Run the sample demo</b> to see a joiner, a mover, and a leaver with fake people.</li>
-    <li>Click <b>Show the staff list</b> and <b>Open the ticket note</b>.</li>
-    <li>For a real file on this PC, use the live form below. Do not paste real employee data if this folder will be copied to GitHub.</li>
+    <li>Click <b>Show the staff list</b>, <b>Find one person</b>, and <b>Open the ticket note</b>.</li>
+    <li>For a file on this PC: choose it, click <b>Preview</b>, then click <b>Run</b>. Tick dry run if you only want the ticket note.</li>
   </ol>
+  <p>After the sample demo you should see 5 created, 1 rejected, Ada Okoye moved, and Sam Patel disabled. E9999 is not found. That is expected.</p>
   <p>Python 3 is the only requirement. If the window did not open, install Python from python.org and tick Add python.exe to PATH, then double-click Start-Here again.</p>
 
   <form method="post" action="/setup"><button>Set up this computer</button></form>
@@ -278,7 +279,7 @@ PAGE = """<!DOCTYPE html>
   </form>
 
   <h2>Live use on this PC</h2>
-  <p>Preview first. Confirm before anything is written. Dry run writes the ticket note and keeps the staff file unchanged. The file you use is copied to inbox with the same time as the ticket note. inbox is not uploaded to GitHub.</p>
+  <p>Click Preview first. It shows the first rows and does not write the staff file. Click Run only after the preview looks right. Dry run writes the ticket note and leaves the staff file unchanged. The file you use is copied to inbox with the same time as the ticket note. inbox is not uploaded to GitHub. Do not use a real employee export if this folder will be copied to GitHub.</p>
   <form method="post" action="/live">
     <label>Action
       <select name="action">
@@ -297,8 +298,8 @@ PAGE = """<!DOCTYPE html>
       <textarea name="csv" id="csv" placeholder="employee_id,first_name,last_name,department,job_title,location,role,manager_email,start_date"></textarea>
     </label>
     <label><input type="checkbox" name="dry_run" value="yes"> Dry run only. Do not change the staff file.</label>
-    <label><input type="checkbox" name="confirm" value="yes"> I have previewed this file and want to run it.</label>
-    <button>Preview or run</button>
+    <button name="confirm" value="no">Preview</button>
+    <button name="confirm" value="yes">Run</button>
   </form>
   <script>
     document.getElementById("file").addEventListener("change", function () {
