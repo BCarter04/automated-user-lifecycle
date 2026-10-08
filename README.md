@@ -6,6 +6,8 @@ Owner: Oluwatobiloba Benjamin Ogungbangbe (Benjamin Ogungbangbe), GitHub BCarter
 This work is mine. It is not for sale. See [LICENSE](LICENSE) and [OWNERSHIP.md](OWNERSHIP.md).
 Permission to copy, reuse, or sell it is valid only if I confirm it myself.
 
+> **Demo only.** This does not talk to a real tenant. It writes a local file on your computer. It will not create or disable a real Microsoft 365 account. Read [DISCLAIMER.md](DISCLAIMER.md) before you run it.
+
 A business asked IT to stop building accounts by hand.
 
 HR emails IT when someone joins or leaves. A technician then creates the account, picks groups from memory, assigns a licence, and later disables the leaver if the email is not missed. Movers are worse: the person changes department and keeps the old access.
@@ -44,6 +46,49 @@ Sales -> Infrastructure
 ```
 
 It runs on any machine with Python 3. No tenant, password, certificate, or client secret is required. The directory is a local JSON file, so the same folder works on a home PC, a lab VM, or a laptop that is not joined to anything.
+
+## Start here
+
+You need Python 3. No install, no login, no admin rights.
+
+1. Open a terminal in this folder.
+2. Run the three commands below, in this order. Joiner first, then mover, then leaver. The mover and leaver look up people the joiner just created.
+3. Open the newest file in `reports/`. That is the ticket note.
+4. Open `data/directory.json` if you want to see the fake staff list. It is created on your machine and is not uploaded to GitHub.
+
+```bash
+python3 src/lifecycle.py joiner --input samples/joiners.csv
+python3 src/lifecycle.py mover --input samples/movers.csv
+python3 src/lifecycle.py leaver --input samples/leavers.csv
+```
+
+What you should see:
+
+| Command | Expected result |
+| --- | --- |
+| joiner | 4 created, 1 rejected. E1005 is rejected because `UnknownDept` is not in the rules file. |
+| mover | Ada Okoye moves from Finance to Infrastructure. Finance-only groups come off. |
+| leaver | Sam Patel is disabled. E9999 is reported as not found. The script does not invent that person. |
+
+Add `--dry-run` if you only want the checks and the report. The staff file is left unchanged.
+
+On Windows, the PowerShell script is the same demo:
+
+```powershell
+.\src\Invoke-UserLifecycle.ps1 -Action joiner -InputPath .\samples\joiners.csv
+```
+
+Help, if you forget the flags:
+
+```bash
+python3 src/lifecycle.py --help
+```
+
+## What each command is for
+
+- `joiner` is a new employee. Bad rows are rejected and are not created.
+- `mover` is a department, location, or role change. Old groups come off. New groups go on.
+- `leaver` blocks sign-in, clears groups, and keeps the account as a record. It does not delete the person.
 
 ## Run it
 

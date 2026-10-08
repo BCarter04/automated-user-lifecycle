@@ -296,6 +296,8 @@ class Lifecycle:
         lines = [
             f"# {action.title()} report",
             "",
+            "Demo only. This did not change a real tenant.",
+            "",
             f"Tenant: `{self.config['tenant']}`",
             f"Generated: {utc_now()}",
             "",
@@ -312,19 +314,23 @@ class Lifecycle:
 
 def parse_args() -> argparse.Namespace:
     """Command line. action is joiner, mover, or leaver. input is the CSV."""
-    parser = argparse.ArgumentParser(description="Run the joiner, mover, or leaver workflow.")
-    parser.add_argument("action", choices=["joiner", "mover", "leaver"])
-    parser.add_argument("--input", required=True, help="CSV file for this action")
-    parser.add_argument("--config", default=str(ROOT / "config.example.json"))
-    parser.add_argument("--rules", default=str(ROOT / "rules" / "department-rules.json"))
-    parser.add_argument("--directory", default=str(ROOT / "data" / "directory.json"))
-    parser.add_argument("--dry-run", action="store_true", help="Validate and report, do not write the directory")
+    parser = argparse.ArgumentParser(
+        description="Demo only. Joiner, mover, and leaver against a local directory. Does not connect to a tenant.",
+        epilog="Start with: python3 src/lifecycle.py joiner --input samples/joiners.csv",
+    )
+    parser.add_argument("action", choices=["joiner", "mover", "leaver"], help="joiner creates, mover changes department, leaver disables")
+    parser.add_argument("--input", required=True, help="CSV file for this action. Use a file in samples/ for the demo.")
+    parser.add_argument("--config", default=str(ROOT / "config.example.json"), help="Settings file. The sample uses a fake tenant.")
+    parser.add_argument("--rules", default=str(ROOT / "rules" / "department-rules.json"), help="Department, location, and role group map.")
+    parser.add_argument("--directory", default=str(ROOT / "data" / "directory.json"), help="Local staff file. Created on first run. Not a real directory.")
+    parser.add_argument("--dry-run", action="store_true", help="Check the CSV and write the report, but do not change the staff file.")
     return parser.parse_args()
 
 
 def main() -> int:
     """Load files, process every row, save, print a one-line result per person."""
     args = parse_args()
+    print("DEMO ONLY. No tenant is contacted. Results are written on this computer.")
     config = load_json(Path(args.config))
     rules = load_json(Path(args.rules))
     engine = Lifecycle(
@@ -351,6 +357,7 @@ def main() -> int:
     print(f"{args.action}: {created} completed, {rejected} rejected or not found")
     print(f"audit log: {log_path}")
     print(f"report: {report_path}")
+    print("Next: open the report. It is the ticket note for this run.")
     for item in results:
         print(f"  {item['status']:10} {item.get('employee_id', '')} {item.get('email', '')}")
     return 0 if created else 1

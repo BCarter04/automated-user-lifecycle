@@ -1,5 +1,7 @@
 # Notes: how this project works
 
+Demo only. This does not connect to a real tenant. See DISCLAIMER.md.
+
 Read this first. The scripts do the same job. This file explains the job in plain language.
 
 ## The problem

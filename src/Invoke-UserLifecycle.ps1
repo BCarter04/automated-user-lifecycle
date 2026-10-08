@@ -41,6 +41,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+Write-Host "DEMO ONLY. No tenant is contacted. Results are written on this computer."
 
 function Read-JsonFile {
     param([string]$Path)
