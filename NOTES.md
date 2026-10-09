@@ -130,13 +130,15 @@ The window says PASS when those counts match.
 
 ## How to use this app
 
-1. Double-click `Start-Here.bat` on Windows, or `Start-Here.sh` on a Mac or Linux PC.
-2. Click Set up this computer. That creates the local folders. Nothing is downloaded.
-3. Click Run the sample demo. A good run says PASS: 5 created, 1 rejected, Ada Okoye moved, Sam Patel disabled, E9999 not found.
-4. Click Show the staff list, Find one person, or Open the ticket note.
-5. For a file on this PC, use Copy joiner sample or a blank template. Click Preview, then Run. Preview does not write. A bad date is shown before Run.
+Open `Start-Here.bat`. The page is in five numbered parts.
 
-The sample path never contacts a tenant. A real employee file should not be copied to GitHub.
+1. Prepare this computer, then Run the sample. A good result says PASS.
+2. Look up one person by staff number or email.
+3. Show the team rules, or clear the staff list.
+4. Use your own spreadsheet. Copy a sample, click Check first, then Apply.
+5. Microsoft 365 is optional. Leave it blank unless an admin gave you the tenant details.
+
+The sample path uses fake people and does not change a real account.
 
 ## How to connect a real tenant
 

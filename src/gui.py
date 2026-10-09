@@ -281,6 +281,9 @@ def connect_from_request(fields: dict) -> str:
         (fields.get("domain") or [""])[0],
         (fields.get("secret") or [""])[0],
     )
+
+
+def reset() -> str:
     path = ROOT / "data" / "directory.json"
     if path.exists():
         path.unlink()
@@ -298,122 +301,122 @@ PAGE = """<!DOCTYPE html>
   h1 { font-size: 28px; margin-bottom: 4px; }
   h2 { font-size: 20px; margin-top: 28px; }
   .note { background: #fff6d8; border: 1px solid #e2c56a; padding: 12px 14px; }
+  .card { border: 1px solid #ddd; padding: 12px 14px; margin-top: 14px; }
   button { font-size: 16px; margin: 8px 8px 8px 0; padding: 10px 14px; cursor: pointer; }
   pre, textarea, input, select { font-family: Consolas, monospace; font-size: 14px; }
   pre { background: #f4f4f4; padding: 14px; white-space: pre-wrap; }
   textarea { width: 100%; height: 140px; }
-  input[type=text] { width: 100%; padding: 8px; }
+  input[type=text], input[type=password] { width: 100%; padding: 8px; }
   label { display: block; margin-top: 10px; }
   ol { padding-left: 20px; }
 </style>
 </head>
 <body>
-  <h1>User lifecycle on this PC</h1>
-  <p class="note">Demo and live use both stay on this computer. Neither contacts a tenant or changes a real Microsoft 365 account.</p>
+  <h1>Staff accounts on this PC</h1>
+  <p class="note">Start with the sample. It uses fake people and does not change a real Microsoft 365 account. The Microsoft 365 section at the bottom is optional and only runs if you fill it in.</p>
   <p>Owner: Oluwatobiloba Benjamin Ogungbangbe. Not for sale. Permission is valid only if the owner confirms it.</p>
 
-  <h2>How to run it</h2>
-  <ol>
-    <li>Double-click Start-Here. You are already in this window if you can read this.</li>
-    <li>Click <b>Set up this computer</b>. It creates data, logs, reports, and inbox. Nothing is downloaded.</li>
-    <li>Click <b>Run the sample demo</b> to see a joiner, a mover, and a leaver with fake people.</li>
-    <li>Click <b>Show the staff list</b>, <b>Find one person</b>, and <b>Open the ticket note</b>.</li>
-    <li>For a file on this PC: choose it, click <b>Preview</b>, then click <b>Run</b>. Tick dry run if you only want the ticket note.</li>
-  </ol>
-  <p>After the sample demo you should see 5 created, 1 rejected, Ada Okoye moved, and Sam Patel disabled. E9999 is not found. That is expected.</p>
-  <p>Python 3 is the only requirement. If the window did not open, install Python from python.org and tick Add python.exe to PATH, then double-click Start-Here again.</p>
+  <div class="card">
+    <h2>1. Try the sample</h2>
+    <p>Click the first button, then the second. A good sample says PASS. That means 5 people were added, 1 row was rejected, Ada Okoye moved team, Sam Patel was blocked, and E9999 was not found.</p>
+    <form method="post" action="/setup"><button>1. Prepare this computer</button></form>
+    <form method="post" action="/demo"><button>2. Run the sample</button></form>
+    <form method="get" action="/list"><button>3. Show the staff list</button></form>
+    <form method="get" action="/ticket"><button>4. Open the ticket note</button></form>
+  </div>
 
-  <form method="post" action="/setup"><button>Set up this computer</button></form>
-  <form method="post" action="/demo"><button>Run the sample demo</button></form>
-  <form method="get" action="/list"><button>Show the staff list</button></form>
-  <form method="get" action="/ticket"><button>Open the ticket note</button></form>
-  <form method="get" action="/rules"><button>Show department rules</button></form>
-  <form method="post" action="/reset"><button>Reset the staff file on this PC</button></form>
+  <div class="card">
+    <h2>2. Look up one person</h2>
+    <p>Type the staff number or the email. You will see the team, manager, groups, licence, and whether sign-in is allowed.</p>
+    <form method="get" action="/person">
+      <label>Staff number or email
+        <input type="text" name="q" placeholder="E1001 or ada.okoye@example.com">
+      </label>
+      <button>Find</button>
+    </form>
+  </div>
 
-  <h2>Connect a real tenant on this PC</h2>
-  <p>This is the live copy. It asks for the details and saves them only on this computer. config.json and .secret are not uploaded. The test asks Entra for a token. It does not create or disable a user.</p>
-  <p>In Entra, register an app. Give it User.ReadWrite.All and GroupMember.ReadWrite.All as application permissions, then grant admin consent. Copy the tenant id and the client id. Create a client secret and paste it here once.</p>
-  <form method="post" action="/connect">
-    <label>Tenant name
-      <input type="text" name="tenant" placeholder="contoso.onmicrosoft.com">
-    </label>
-    <label>Tenant id
-      <input type="text" name="tenant_id" placeholder="00000000-0000-0000-0000-000000000000">
-    </label>
-    <label>Application client id
-      <input type="text" name="client_id" placeholder="application id from Entra">
-    </label>
-    <label>Email domain
-      <input type="text" name="domain" placeholder="contoso.com">
-    </label>
-    <label>Client secret, stored only in .secret on this PC
-      <input type="password" name="secret" placeholder="paste once, not saved to GitHub">
-    </label>
-    <button name="do" value="save">Save on this PC</button>
-    <button name="do" value="test">Test connection</button>
-  </form>
-  <form method="get" action="/person">
-    <label>Employee id or email
-      <input type="text" name="q" placeholder="E1001 or ada.okoye@example.com">
-    </label>
-    <button>Find</button>
-  </form>
+  <div class="card">
+    <h2>3. What each team gets</h2>
+    <p>The program does not guess groups. This list does. Finance gets finance groups. A manager gets the managers group.</p>
+    <form method="get" action="/rules"><button>Show the team rules</button></form>
+    <form method="post" action="/reset"><button>Clear the staff list on this PC</button></form>
+  </div>
 
-  <h2>What the CSV must contain</h2>
-  <p>The first row must be the column names, exactly as written here. One person is one row. Copy a sample into the box, then click Preview.</p>
-  <p><b>Joiner.</b> Required: employee_id, first_name, last_name, department, job_title, location, role, manager_email, start_date. Department must be Finance, Sales, Infrastructure, or People. Role must be Staff or Manager. Location must be Corporate Office or Remote.</p>
-  <pre id="sample-joiner">employee_id,first_name,last_name,department,job_title,location,role,manager_email,start_date
+  <div class="card">
+    <h2>4. Use your own spreadsheet</h2>
+    <p>New starter, team change, or leaver. Copy a sample into the box, click Check first, then Apply. Check first does not save. A date must be 2026-10-20 or 20/10/2026. Team must be Finance, Sales, Infrastructure, or People.</p>
+    <p><b>New starter columns:</b> employee_id, first_name, last_name, department, job_title, location, role, manager_email, start_date.</p>
+    <pre id="sample-joiner">employee_id,first_name,last_name,department,job_title,location,role,manager_email,start_date
 E2001,Nia,Cole,Sales,Account Executive,Corporate Office,Staff,maya.adebayo@example.com,2026-10-20</pre>
-  <button type="button" onclick="copySample('sample-joiner','joiner')">Copy joiner sample into the box</button>
-  <p><b>Mover.</b> Required: employee_id, email. Add any of new_department, new_job_title, new_location, new_role, new_manager_email.</p>
-  <pre id="sample-mover">employee_id,email,new_department,new_job_title,new_location,new_role,new_manager_email,effective_date
+    <button type="button" onclick="copySample('sample-joiner','joiner')">Copy a new starter</button>
+    <p><b>Team change columns:</b> employee_id, email, and any new_ column that changed.</p>
+    <pre id="sample-mover">employee_id,email,new_department,new_job_title,new_location,new_role,new_manager_email,effective_date
 E1001,ada.okoye@example.com,Infrastructure,IT Support Analyst,Corporate Office,Staff,maya.adebayo@example.com,2026-11-01</pre>
-  <button type="button" onclick="copySample('sample-mover','mover')">Copy mover sample into the box</button>
-  <p><b>Leaver.</b> Required: employee_id, email. reason is the note on the ticket.</p>
-  <pre id="sample-leaver">employee_id,email,last_day,reason
+    <button type="button" onclick="copySample('sample-mover','mover')">Copy a team change</button>
+    <p><b>Leaver columns:</b> employee_id, email. reason is the note.</p>
+    <pre id="sample-leaver">employee_id,email,last_day,reason
 E1002,sam.patel@example.com,2026-10-31,Resignation</pre>
-  <button type="button" onclick="copySample('sample-leaver','leaver')">Copy leaver sample into the box</button>
-  <p>Blank files, header only, if you want to fill them in Excel: <a href="/sample/blank-joiner">blank joiner</a>, <a href="/sample/blank-mover">blank mover</a>, <a href="/sample/blank-leaver">blank leaver</a>. Save the download, add rows, then choose that file above. A file saved by Excel is accepted, including a semicolon list and a hidden mark at the start. finance and Finance are the same department. A date must be 2026-10-20 or 20/10/2026. A bad date is rejected and that person is not created.</p>
-  <p>Click Preview first. It shows the first rows and does not write the staff file. Click Run only after the preview looks right. Dry run writes the ticket note and leaves the staff file unchanged. The file you use is copied to inbox with the same time as the ticket note. inbox is not uploaded to GitHub. Do not use a real employee export if this folder will be copied to GitHub.</p>
-  <form method="post" action="/live">
-    <label>Action
-      <select name="action" id="action">
-        <option>joiner</option>
-        <option>mover</option>
-        <option>leaver</option>
-      </select>
-    </label>
-    <label>Choose a CSV on this PC
-      <input type="file" id="file" accept=".csv,text/csv">
-    </label>
-    <label>Or type the full path
-      <input type="text" name="path" placeholder="C:\\Users\\you\\Desktop\\joiners.csv">
-    </label>
-    <label>Or paste the CSV
-      <textarea name="csv" id="csv" placeholder="employee_id,first_name,last_name,department,job_title,location,role,manager_email,start_date"></textarea>
-    </label>
-    <label><input type="checkbox" name="dry_run" value="yes"> Dry run only. Do not change the staff file.</label>
-    <button type="button" onclick="loadSample('joiners')">Load sample joiner</button>
-    <button type="button" onclick="loadSample('movers')">Load sample mover</button>
-    <button type="button" onclick="loadSample('leavers')">Load sample leaver</button>
-    <button name="confirm" value="no">Preview</button>
-    <button name="confirm" value="yes">Run</button>
-  </form>
+    <button type="button" onclick="copySample('sample-leaver','leaver')">Copy a leaver</button>
+    <p>Blank files for Excel: <a href="/sample/blank-joiner">new starter</a>, <a href="/sample/blank-mover">team change</a>, <a href="/sample/blank-leaver">leaver</a>. Do not rename the first row.</p>
+    <form method="post" action="/live">
+      <label>What is this file?
+        <select name="action" id="action">
+          <option value="joiner">New starter</option>
+          <option value="mover">Team change</option>
+          <option value="leaver">Leaver</option>
+        </select>
+      </label>
+      <label>Choose the spreadsheet
+        <input type="file" id="file" accept=".csv,text/csv">
+      </label>
+      <label>Or paste it here
+        <textarea name="csv" id="csv" placeholder="Paste the copied sample, or choose a file above"></textarea>
+      </label>
+      <input type="hidden" name="path" value="">
+      <label><input type="checkbox" name="dry_run" value="yes"> Check only. Do not save the staff list.</label>
+      <button name="confirm" value="no">Check first</button>
+      <button name="confirm" value="yes">Apply</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>5. Microsoft 365, optional</h2>
+    <p>Leave this blank unless an admin has given you the tenant details. Save keeps them on this PC only. Test connection checks the sign-in. It does not create or block a person.</p>
+    <form method="post" action="/connect">
+      <label>Tenant name
+        <input type="text" name="tenant" placeholder="contoso.onmicrosoft.com">
+      </label>
+      <label>Tenant id
+        <input type="text" name="tenant_id" placeholder="from the Entra admin centre">
+      </label>
+      <label>Application client id
+        <input type="text" name="client_id" placeholder="from the app registration">
+      </label>
+      <label>Email domain
+        <input type="text" name="domain" placeholder="contoso.com">
+      </label>
+      <label>Client secret, kept only on this PC
+        <input type="password" name="secret" placeholder="paste once">
+      </label>
+      <button name="do" value="save">Save on this PC</button>
+      <button name="do" value="test">Test connection</button>
+    </form>
+  </div>
+
+  <h2>Result</h2>
+  <pre>{result}</pre>
   <script>
     document.getElementById("file").addEventListener("change", function () {
       var reader = new FileReader();
       reader.onload = function () { document.getElementById("csv").value = reader.result; };
       reader.readAsText(this.files[0]);
     });
-    function loadSample(name) {
-      fetch("/sample/" + name).then(function (response) { return response.text(); }).then(function (text) {
-        document.getElementById("csv").value = text;
-      });
+    function copySample(id, action) {
+      document.getElementById("csv").value = document.getElementById(id).innerText;
+      document.getElementById("action").value = action;
     }
   </script>
-
-  <h2>Result</h2>
-  <pre>{result}</pre>
 </body>
 </html>
 """
