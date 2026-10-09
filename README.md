@@ -12,7 +12,7 @@ A business asked IT to stop building accounts by hand.
 
 HR emails IT when someone joins or leaves. A technician then creates the account, picks groups from memory, assigns a licence, and later disables the leaver if the email is not missed. Movers are worse: the person changes department and keeps the old access.
 
-This project replaces that email chain with one workflow. Read `NOTES.md` for the plain-language walkthrough of every file and every step.
+This project replaces that email chain with one workflow. Read [HOW-TO.md](HOW-TO.md) for the five steps. Read `NOTES.md` for what each file does.
 
 ```
 HR CSV
