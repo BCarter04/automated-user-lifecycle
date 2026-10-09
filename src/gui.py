@@ -269,7 +269,18 @@ def ticket() -> str:
     return f"Latest ticket note: {path}\n\n" + path.read_text(encoding="utf-8")
 
 
-def reset() -> str:
+def connect_from_request(fields: dict) -> str:
+    import live_setup
+    action = (fields.get("do") or ["save"])[0]
+    if action == "test":
+        return live_setup.test_connection()
+    return live_setup.save_live(
+        (fields.get("tenant") or [""])[0],
+        (fields.get("tenant_id") or [""])[0],
+        (fields.get("client_id") or [""])[0],
+        (fields.get("domain") or [""])[0],
+        (fields.get("secret") or [""])[0],
+    )
     path = ROOT / "data" / "directory.json"
     if path.exists():
         path.unlink()
@@ -319,7 +330,28 @@ PAGE = """<!DOCTYPE html>
   <form method="get" action="/rules"><button>Show department rules</button></form>
   <form method="post" action="/reset"><button>Reset the staff file on this PC</button></form>
 
-  <h2>Find one person</h2>
+  <h2>Connect a real tenant on this PC</h2>
+  <p>This is the live copy. It asks for the details and saves them only on this computer. config.json and .secret are not uploaded. The test asks Entra for a token. It does not create or disable a user.</p>
+  <p>In Entra, register an app. Give it User.ReadWrite.All and GroupMember.ReadWrite.All as application permissions, then grant admin consent. Copy the tenant id and the client id. Create a client secret and paste it here once.</p>
+  <form method="post" action="/connect">
+    <label>Tenant name
+      <input type="text" name="tenant" placeholder="contoso.onmicrosoft.com">
+    </label>
+    <label>Tenant id
+      <input type="text" name="tenant_id" placeholder="00000000-0000-0000-0000-000000000000">
+    </label>
+    <label>Application client id
+      <input type="text" name="client_id" placeholder="application id from Entra">
+    </label>
+    <label>Email domain
+      <input type="text" name="domain" placeholder="contoso.com">
+    </label>
+    <label>Client secret, stored only in .secret on this PC
+      <input type="password" name="secret" placeholder="paste once, not saved to GitHub">
+    </label>
+    <button name="do" value="save">Save on this PC</button>
+    <button name="do" value="test">Test connection</button>
+  </form>
   <form method="get" action="/person">
     <label>Employee id or email
       <input type="text" name="q" placeholder="E1001 or ada.okoye@example.com">
@@ -425,6 +457,8 @@ class Handler(BaseHTTPRequestHandler):
             self.respond(live_from_request(fields))
         elif path == "/reset":
             self.respond(reset())
+        elif path == "/connect":
+            self.respond(connect_from_request(fields))
         else:
             self.respond(setup())
 

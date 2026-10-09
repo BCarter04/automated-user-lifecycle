@@ -128,6 +128,32 @@ The window says PASS when those counts match.
 - PowerShell matches the window: semicolon files, `finance` for Finance, and a UK date. A bad date is rejected.
 - `examples/demo-pass.png` is the sample result, so it can be seen without running the window.
 
+## How to use this app
+
+1. Double-click `Start-Here.bat` on Windows, or `Start-Here.sh` on a Mac or Linux PC.
+2. Click Set up this computer. That creates the local folders. Nothing is downloaded.
+3. Click Run the sample demo. A good run says PASS: 5 created, 1 rejected, Ada Okoye moved, Sam Patel disabled, E9999 not found.
+4. Click Show the staff list, Find one person, or Open the ticket note.
+5. For a file on this PC, use Copy joiner sample or a blank template. Click Preview, then Run. Preview does not write. A bad date is shown before Run.
+
+The sample path never contacts a tenant. A real employee file should not be copied to GitHub.
+
+## How to connect a real tenant
+
+The live form is on the same page, under Connect a real tenant on this PC. It is the real-world path. It is not a second program. It asks for the details and keeps them on this PC.
+
+You need, from Entra admin centre:
+
+- The tenant name, such as `contoso.onmicrosoft.com`.
+- The tenant id.
+- An app registration, and its application client id.
+- Application permissions User.ReadWrite.All and GroupMember.ReadWrite.All, with admin consent granted.
+- A client secret. Paste it in the form once. It is saved only in `.secret` on this PC. `.secret` and `config.json` are not uploaded.
+
+Click Save on this PC, then Test connection. A good test says Entra accepted the app. That test does not create or disable a user.
+
+After the test succeeds, the same CSV and the same rules file are the input. The order stays validate, create, groups, licence, log. If a step fails, stop that person and write the error. Do not guess.
+
 ## What is done
 
 This public repo is finished as a demo and as a live check on one PC.
@@ -141,17 +167,11 @@ This public repo is finished as a demo and as a live check on one PC.
 
 ## What is not done now, and what it will be
 
-A real Microsoft 365 tenant is not connected. That is deliberate. This repo must run without a login, and it must not hold a secret.
+The demo path does not contact a tenant. The live form does, and only after you fill it on this PC.
 
-When a developer tenant exists, the work is this:
+The live form saves the tenant name, tenant id, client id, and email domain in `config.json`. It saves the secret in `.secret`. Both files are gitignored. A connection test asks Entra for a token and does not create a user.
 
-1. Copy `config.example.json` to `config.json` on the PC. `config.json` is not uploaded. Git ignores it.
-2. Put the tenant name in that file, for example `contoso.onmicrosoft.com`. The sample name `tenant.example.onmicrosoft.com` stays in the example file only.
-3. Put any app secret in an environment variable, not in `config.json` and not in GitHub.
-4. Keep the same CSV and the same rules file. The order stays validate, create, groups, licence, log.
-5. If one step fails, stop that person and write the error. Do not guess the next step.
-
-That connection is not part of this finished repo.
+Creating and disabling real accounts from the same CSV is the next step after a successful test. It uses the same validate, create, groups, licence, log order. It is not run by the sample demo.
 
 ## What it does not do
 
