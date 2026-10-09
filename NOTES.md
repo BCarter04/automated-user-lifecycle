@@ -130,15 +130,15 @@ The window says PASS when those counts match.
 
 ## How to use this app
 
-Open `Start-Here.bat`. The page is in five numbered parts.
+Open `Start-Here.bat`. The page is five numbered parts. You do not type a command.
 
-1. Prepare this computer, then Run the sample. A good result says PASS.
-2. Look up one person by staff number or email.
-3. Show the team rules, or clear the staff list.
-4. Use your own spreadsheet. Copy a sample, click Check first, then Apply.
-5. Microsoft 365 is optional. Leave it blank unless an admin gave you the tenant details.
+1. Try the sample. Prepare this computer creates the local folders. Run the sample adds five fake people, rejects one bad row, moves Ada Okoye from Finance to Infrastructure, blocks Sam Patel, and reports E9999 as not found. A good run says PASS. The staff list shows who can still sign in. The ticket note is the text for a ticket.
+2. Look up one person. Type E1001 or ada.okoye@example.com. You see the team, manager, licence, groups, and whether sign-in is allowed or blocked.
+3. What each team gets. The rules file chooses the groups, not the program. Finance gets finance groups. Corporate Office gets the site group. Manager gets the managers group. Clear the staff list removes only the local staff file.
+4. Use your own spreadsheet. Copy a new starter, a team change, or a leaver. The first row must be the column names. Check first shows the rows and any bad date, and it does not save. Apply saves the staff list on this PC. A date must be 2026-10-20 or 20/10/2026. The team must be Finance, Sales, Infrastructure, or People.
+5. Microsoft 365 is optional. Leave it blank unless an admin gave you the tenant name, tenant id, client id, email domain, and client secret. Save keeps the secret in .secret on this PC. That file is not uploaded. Test connection asks Entra for a token and does not create or block a person.
 
-The sample path uses fake people and does not change a real account.
+The sample uses fake people and does not change a real account.
 
 ## How to connect a real tenant
 

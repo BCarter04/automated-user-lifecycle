@@ -49,18 +49,17 @@ It runs on any machine with Python 3. No tenant, password, certificate, or clien
 
 ## Start here
 
-Double-click `Start-Here.bat` on Windows, or `Start-Here.sh` on Mac or Linux. A window opens in the browser. You do not type a command.
+Double-click `Start-Here.bat` on Windows, or `Start-Here.sh` on a Mac or Linux PC. A page opens. You do not type a command. The page has five parts.
 
-The window has the full steps:
+1. Try the sample. Click Prepare this computer, then Run the sample. A good result says PASS: 5 people added, 1 row rejected, Ada Okoye moved team, Sam Patel blocked, and E9999 not found. Then open the staff list or the ticket note.
+2. Look up one person. Type a staff number, such as E1001, or an email. You see the team, manager, groups, licence, and whether sign-in is allowed.
+3. What each team gets. The program does not guess groups. Finance gets finance groups. A manager gets the managers group. Clear the staff list removes only the local list. The samples stay.
+4. Use your own spreadsheet. Copy a new starter, a team change, or a leaver. Click Check first, then Apply. Check first does not save. A date must be 2026-10-20 or 20/10/2026. The team must be Finance, Sales, Infrastructure, or People.
+5. Microsoft 365 is optional and at the bottom. Leave it blank unless an admin gave you the tenant details. Save keeps them on this PC only. Test connection does not create or block a person.
 
-1. Set up this computer. It creates `data`, `logs`, `reports`, and `inbox` on this PC. Nothing is downloaded.
-2. Run the sample demo. Fake people only.
-3. Show the staff list, or open the ticket note.
-4. Live use: choose a CSV, click Preview, then click Run. Tick dry run if you only want the ticket note. Find one person shows department, manager, groups, licence, and whether sign-in is blocked.
+The sample uses fake people and does not change a real Microsoft 365 account. Do not put a real employee file in a folder you will upload to GitHub.
 
-Live use writes `data/directory.json`, a log, and a ticket note on this computer. It does not contact a tenant. Do not put a real employee export in a folder you will upload to GitHub.
-
-Python 3 is the only requirement. If the window does not open, install Python from python.org, tick Add python.exe to PATH, and double-click Start-Here again.
+Python 3 is the only requirement. If the page does not open, install Python from python.org, tick Add python.exe to PATH, and double-click Start-Here again.
 
 The sample ticket note is `reports/demo-summary.md`. A live run writes a new file in `reports/`.
 
