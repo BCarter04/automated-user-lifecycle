@@ -84,7 +84,7 @@ def preview_text(action: str, rows: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def run_rows(action: str, rows: list[dict], dry_run: bool = False, source_name: str = "pasted.csv") -> str:
+def run_rows(action: str, rows: list[dict], dry_run: bool = False, source_name: str = "pasted.csv", m365: bool = False) -> str:
     if action not in {"joiner", "mover", "leaver"}:
         return "Choose joiner, mover, or leaver."
     if not rows:
@@ -121,7 +121,43 @@ def run_rows(action: str, rows: list[dict], dry_run: bool = False, source_name: 
         if removed is not None or added is not None:
             extra += f" | off: {', '.join(removed or []) or 'none'} | on: {', '.join(added or []) or 'none'}"
         lines.append(f"{status:14} {item.get('employee_id', '')} {item.get('email', '')}{extra}")
+    if m365 and not dry_run:
+        lines.extend(["", *apply_m365(action, rows, results, _config)])
+    elif m365 and dry_run:
+        lines.append("")
+        lines.append("Microsoft 365 was not contacted because this was check only.")
     return "\n".join(lines)
+
+
+def apply_m365(action: str, rows: list[dict], results: list[dict], config: dict) -> list[str]:
+    import graph_live
+    lines = ["Microsoft 365:"]
+    domain = config.get("default_domain", "")
+    try:
+        for row, item in zip(rows, results):
+            if item["status"] not in {"created", "moved", "disabled", "unchanged"}:
+                continue
+            if action == "joiner":
+                outcome = graph_live.apply_joiner(row, item.get("groups") or [], item.get("licence") or "", domain)
+            elif action == "leaver":
+                outcome = graph_live.apply_leaver(row.get("employee_id", ""), row.get("email", ""))
+            else:
+                outcome = graph_live.apply_mover(
+                    row.get("employee_id", ""),
+                    row.get("email", ""),
+                    item.get("department", ""),
+                    item.get("groups_added") or [],
+                    item.get("groups_removed") or [],
+                )
+            extra = ""
+            if outcome.get("temp_password"):
+                extra = f" | temporary password {outcome['temp_password']} (shown once)"
+            if outcome.get("missing"):
+                extra += " | missing " + ", ".join(outcome["missing"])
+            lines.append(f"{outcome['status']:28} {item.get('employee_id', '')} {outcome.get('email', '')}{extra}")
+    except Exception as error:
+        lines.append(f"Microsoft 365 failed. Local staff list was still saved. {error}")
+    return lines
 
 
 def save_rows(path: Path, rows: list[dict]) -> None:
@@ -243,7 +279,7 @@ def live_from_request(fields: dict) -> str:
     dry_run = (fields.get("dry_run") or [""])[0] == "yes"
     if not confirmed:
         return preview_text(action, rows)
-    return run_rows(action, rows, dry_run=dry_run, source_name=source)
+    return run_rows(action, rows, dry_run=dry_run, source_name=source, m365=(fields.get("m365") or [""])[0] == "yes")
 
 
 def staff_list() -> str:
@@ -375,6 +411,7 @@ E1002,sam.patel@example.com,2026-10-31,Resignation</pre>
       </label>
       <input type="hidden" name="path" value="">
       <label><input type="checkbox" name="dry_run" value="yes"> Check only. Do not save the staff list.</label>
+      <label><input type="checkbox" name="m365" value="yes"> Also apply to Microsoft 365. Only after section 5 says connected.</label>
       <button name="confirm" value="no">Check first</button>
       <button name="confirm" value="yes">Apply</button>
     </form>
@@ -382,7 +419,7 @@ E1002,sam.patel@example.com,2026-10-31,Resignation</pre>
 
   <div class="card">
     <h2>5. Microsoft 365, optional</h2>
-    <p>Leave this blank unless an admin has given you the tenant details. Save keeps them on this PC only. Test connection checks the sign-in. It does not create or block a person.</p>
+    <p>Leave this blank unless an admin has given you the tenant details. Save keeps them on this PC only. Test connection checks the sign-in. After it says connected, tick Also apply to Microsoft 365 on a spreadsheet. That creates, moves, or blocks the real account. The sample button never does this.</p>
     <form method="post" action="/connect">
       <label>Tenant name
         <input type="text" name="tenant" placeholder="contoso.onmicrosoft.com">

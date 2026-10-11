@@ -136,7 +136,9 @@ Open `Start-Here.bat`. The page is five numbered parts. You do not type a comman
 2. Look up one person. Type E1001 or ada.okoye@example.com. You see the team, manager, licence, groups, and whether sign-in is allowed or blocked.
 3. What each team gets. The rules file chooses the groups, not the program. Finance gets finance groups. Corporate Office gets the site group. Manager gets the managers group. Clear the staff list removes only the local staff file.
 4. Use your own spreadsheet. Copy a new starter, a team change, or a leaver. The first row must be the column names. Check first shows the rows and any bad date, and it does not save. Apply saves the staff list on this PC. A date must be 2026-10-20 or 20/10/2026. The team must be Finance, Sales, Infrastructure, or People.
-5. Microsoft 365 is optional. Leave it blank unless an admin gave you the tenant name, tenant id, client id, email domain, and client secret. Save keeps the secret in .secret on this PC. That file is not uploaded. Test connection asks Entra for a token and does not create or block a person.
+5. Microsoft 365 is optional. Fill the tenant name, tenant id, client id, email domain, and client secret. Save keeps the secret in .secret on this PC. Test connection must say connected. Then, on your own spreadsheet, tick Also apply to Microsoft 365 and click Apply. That creates a real account, moves groups, or blocks a leaver. The sample button never does this. A new account gets a temporary password shown once. Groups must already exist in Entra with the same names as the rules file.
+
+The app needs these application permissions, with admin consent: User.ReadWrite.All, Group.Read.All, GroupMember.ReadWrite.All, Organization.Read.All.
 
 The sample uses fake people and does not change a real account.
 
